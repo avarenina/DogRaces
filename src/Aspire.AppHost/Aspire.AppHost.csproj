@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BackgroundService\BackgroundService.csproj" />
     <ProjectReference Include="..\Web.Api\Web.Api.csproj" />
   </ItemGroup>
 

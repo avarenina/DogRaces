@@ -11,4 +11,9 @@ builder.AddProject<Projects.Web_Api>("web-api")
     .WithReference(database)
     .WaitFor(database);
 
+builder.AddProject<Projects.BackgroundService>("background-service")
+    .WithEnvironment("ConnectionStrings__Database", database)
+    .WithReference(database)
+    .WaitFor(database);
+
 builder.Build().Run();
