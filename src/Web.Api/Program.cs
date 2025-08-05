@@ -5,6 +5,7 @@ using Infrastructure;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Web.Api;
 using Web.Api.Extensions;
+using Web.Api.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -19,16 +20,26 @@ builder.Services
 
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
 
+// Add SignalR
+builder.Services.AddSignalR();
+
+// Add background service for races updates
+builder.Services.AddHostedService<RacesUpdateService>();
+
 WebApplication app = builder.Build();
 
 app.MapDefaultEndpoints();
 
 app.MapEndpoints();
 
+// Map SignalR hubs
+app.MapHubs();
+
 if (app.Environment.IsDevelopment())
 {
+    app.UseStaticFiles();
+    app.MapFallbackToFile("index.html");
     app.UseSwaggerWithUi();
-
     app.ApplyMigrations();
 }
 
