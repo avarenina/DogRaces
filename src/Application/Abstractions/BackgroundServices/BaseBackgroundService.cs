@@ -7,7 +7,7 @@ namespace Application.Abstractions.BackgroundServices;
 public abstract class BaseBackgroundService<TConfig> : BackgroundService
     where TConfig : BackgroundServiceConfig
 {
-    private readonly TConfig _config;
+    protected readonly TConfig _config;
 
     protected BaseBackgroundService(IOptions<TConfig> config)
     {

@@ -3,7 +3,9 @@ using Domain.Races;
 
 namespace Application.Races.Create;
 
-public sealed class CreateRaceCommand : ICommand<Guid>
+public sealed class CreateRaceCommand : ICommand<List<Guid>>
 {
-    public DateTime StartTime { get; set; }
+    public DateTime? LastRaceStartTime { get; set; }
+    public int AmountOfRacesToCreate { get; set; }
+    public int TimeBetweenRaces { get; set; }  
 }

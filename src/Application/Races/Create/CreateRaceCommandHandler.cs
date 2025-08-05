@@ -1,4 +1,5 @@
-﻿using Application.Abstractions.Data;
+﻿using System.Collections.Generic;
+using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Races;
 using Microsoft.EntityFrameworkCore;
@@ -9,23 +10,36 @@ namespace Application.Races.Create;
 internal sealed class CreateRaceCommandHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider)
-    : ICommandHandler<CreateRaceCommand, Guid>
+    : ICommandHandler<CreateRaceCommand, List<Guid>>
 {
-    public async Task<Result<Guid>> Handle(CreateRaceCommand command, CancellationToken cancellationToken)
+    public async Task<Result<List<Guid>>> Handle(CreateRaceCommand command, CancellationToken cancellationToken)
     {
-       
-        var race = new Race
+        DateTime startTime = command.LastRaceStartTime ?? dateTimeProvider.UtcNow;
+
+        var response = new List<Guid> ();
+
+        for (int i = 0; i < command.AmountOfRacesToCreate - 1; i++)
         {
-            StartTime = command.StartTime,
-            CreatedAt = dateTimeProvider.UtcNow,
-        };
+            // first we need to update last start time
+            startTime = startTime.AddSeconds(command.TimeBetweenRaces);
 
-        race.Raise(new RaceCreatedDomainEvent(race.Id));
+            var race = new Race
+            {
+                Id = Guid.NewGuid(),
+                StartTime = startTime,
+                CreatedAt = dateTimeProvider.UtcNow,
+                Status = RaceStatus.Open
+            };
 
-        context.Races.Add(race);
+            // we are going to rase the event with new races so that we can notify services
+            race.Raise(new RaceCreatedDomainEvent(race.Id));
+
+            context.Races.Add(race);
+            response.Add(race.Id);
+        }
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return race.Id;
+        return response;
     }
 }

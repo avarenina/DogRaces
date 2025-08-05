@@ -6,6 +6,7 @@ public class CreateRaceCommandValidator : AbstractValidator<CreateRaceCommand>
 {
     public CreateRaceCommandValidator()
     {
-        RuleFor(c => c.StartTime).GreaterThan(DateTime.Now);
+        RuleFor(c => c.AmountOfRacesToCreate).GreaterThan(1);
+        RuleFor(c => c.TimeBetweenRaces).GreaterThan(60);
     }
 }
