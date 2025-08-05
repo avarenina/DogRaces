@@ -6,14 +6,22 @@ IResourceBuilder<PostgresDatabaseResource> database = builder
     .WithBindMount("../../.containers/db", "/var/lib/postgresql/data")
     .AddDatabase("dog-races");
 
+IResourceBuilder<RedisResource> cache = builder.AddRedis("cache");
+
 builder.AddProject<Projects.Web_Api>("web-api")
     .WithEnvironment("ConnectionStrings__Database", database)
+    .WithEnvironment("ConnectionStrings__Redis", cache)
     .WithReference(database)
-    .WaitFor(database);
+    .WithReference(cache)
+    .WaitFor(database)
+    .WaitFor(cache);
 
 builder.AddProject<Projects.BackgroundService>("background-service")
     .WithEnvironment("ConnectionStrings__Database", database)
+    .WithEnvironment("ConnectionStrings__Redis", cache)
     .WithReference(database)
-    .WaitFor(database);
+    .WithReference(cache)
+    .WaitFor(database)
+    .WaitFor(cache);
 
 builder.Build().Run();

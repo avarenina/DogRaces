@@ -23,7 +23,7 @@ builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
 // Add SignalR
 builder.Services.AddSignalR();
 
-// Add background service for races updates
+// Add background service for races updates - TEMP
 builder.Services.AddHostedService<RacesUpdateService>();
 
 WebApplication app = builder.Build();
