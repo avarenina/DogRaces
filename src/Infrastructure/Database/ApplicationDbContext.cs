@@ -1,6 +1,5 @@
 ﻿using Application.Abstractions.Data;
-using Domain.Todos;
-using Domain.Users;
+using Domain.Races;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -12,9 +11,7 @@ public sealed class ApplicationDbContext(
     IDomainEventsDispatcher domainEventsDispatcher)
     : DbContext(options), IApplicationDbContext
 {
-    public DbSet<User> Users { get; set; }
-
-    public DbSet<TodoItem> TodoItems { get; set; }
+    public DbSet<Race> Races { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
