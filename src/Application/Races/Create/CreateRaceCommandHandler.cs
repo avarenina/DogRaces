@@ -11,7 +11,8 @@ namespace Application.Races.Create;
 internal sealed class CreateRaceCommandHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider,
-    IDistributedCache distributedCache)
+    IDistributedCache distributedCache,
+    RaceFactory raceFactory)
     : ICommandHandler<CreateRaceCommand, List<Guid>>
 {
     public async Task<Result<List<Guid>>> Handle(CreateRaceCommand command, CancellationToken cancellationToken)
@@ -25,16 +26,7 @@ internal sealed class CreateRaceCommandHandler(
             // first we need to update last start time
             startTime = startTime.AddSeconds(command.TimeBetweenRaces);
 
-            var race = new Race
-            {
-                Id = Guid.NewGuid(),
-                StartTime = startTime,
-                CreatedAt = dateTimeProvider.UtcNow,
-                Status = RaceStatus.Open
-            };
-
-            // we are going to rase the event with new races so that we can notify services
-            race.Raise(new RaceCreatedDomainEvent(race.Id));
+            Race race = raceFactory.Create(startTime);
 
             context.Races.Add(race);
             response.Add(race.Id);

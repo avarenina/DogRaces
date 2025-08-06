@@ -62,8 +62,8 @@ public static class DependencyInjection
             redisOptions.Configuration = redisConnectionString;
         });
 
-        var multiplexer = ConnectionMultiplexer.Connect(redisConnectionString);
-        services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+            ConnectionMultiplexer.Connect(redisConnectionString));
 
         return services;
     }

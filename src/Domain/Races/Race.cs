@@ -1,11 +1,13 @@
-﻿using SharedKernel;
+﻿using Domain.Bets;
+using SharedKernel;
 
 namespace Domain.Races;
 
-public sealed class Race : Entity
+public class Race : Entity
 {
     public Guid Id { get; set; }
     public string? Result { get; set; }
+    public virtual ICollection<Bet> Bets { get; set; }
     public bool IsCompleted { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime CreatedAt { get; set; }

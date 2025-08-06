@@ -1,4 +1,5 @@
 ﻿using Application.Abstractions.Data;
+using Domain.Bets;
 using Domain.Races;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ public sealed class ApplicationDbContext(
     : DbContext(options), IApplicationDbContext
 {
     public DbSet<Race> Races { get; set; }
+    public DbSet<Bet> Bets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
