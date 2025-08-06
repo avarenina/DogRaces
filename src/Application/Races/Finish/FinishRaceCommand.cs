@@ -2,7 +2,4 @@
 
 namespace Application.Races.Finish;
 
-public sealed record FinishRaceCommand(Guid RaceId) : ICommand
-{
-    public string Result { get; set; }
-}
+public sealed record FinishRaceCommand(Guid RaceId) : ICommand;

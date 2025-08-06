@@ -1,4 +1,5 @@
-﻿using Application.Abstractions.Behaviors;
+﻿using Application.Abstractions;
+using Application.Abstractions.Behaviors;
 using Application.Abstractions.Messaging;
 using Application.Races.Create;
 using FluentValidation;
@@ -36,7 +37,10 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
 
-        services.AddScoped<RaceFactory>();
+        services.AddScoped<IProbabilityCalculator, ProbabilityCalculator>();
+
+        services.AddTransient<IRaceFactory, RaceFactory>();
+        services.AddTransient<IBetFactory, BetFactory>();
 
         return services;
     }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Application.Abstractions;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Races;
@@ -12,7 +13,7 @@ internal sealed class CreateRaceCommandHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider,
     IDistributedCache distributedCache,
-    RaceFactory raceFactory)
+    IRaceFactory raceFactory)
     : ICommandHandler<CreateRaceCommand, List<Guid>>
 {
     public async Task<Result<List<Guid>>> Handle(CreateRaceCommand command, CancellationToken cancellationToken)
@@ -21,12 +22,12 @@ internal sealed class CreateRaceCommandHandler(
 
         var response = new List<Guid> ();
 
-        for (int i = 0; i < command.AmountOfRacesToCreate - 1; i++)
+        for (int i = 0; i < command.AmountOfRacesToCreate; i++)
         {
             // first we need to update last start time
             startTime = startTime.AddSeconds(command.TimeBetweenRaces);
 
-            Race race = raceFactory.Create(startTime);
+            Race race = raceFactory.Create(startTime, command.NumberOfRunners, command.BookmakerMargin);
 
             context.Races.Add(race);
             response.Add(race.Id);

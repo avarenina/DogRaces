@@ -4,10 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Domain.Bets;
-
-public enum BetType
+namespace Application.Abstractions;
+public interface IRandomDoubleProvider
 {
-    Winner,
-    WithinFirstThree
+    double NextDouble();
 }

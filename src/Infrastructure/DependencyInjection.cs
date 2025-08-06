@@ -1,9 +1,11 @@
 ﻿using System.Text;
+using Application.Abstractions;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Infrastructure.Database;
 using Infrastructure.DomainEvents;
 using Infrastructure.Messaging;
+using Infrastructure.RNG;
 using Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -30,6 +32,8 @@ public static class DependencyInjection
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
+
+        services.AddTransient<IRandomDoubleProvider, SecureRandomDoubleProvider>();
 
         return services;
     }

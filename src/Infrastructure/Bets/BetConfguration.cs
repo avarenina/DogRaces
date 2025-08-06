@@ -8,6 +8,7 @@ using Domain.Bets;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Infrastructure.Bets;
 
@@ -22,11 +23,14 @@ internal sealed class BetConfiguration : IEntityTypeConfiguration<Bet>
             v => DeserializeList(v)
         );
 
+
         builder.Property(b => b.Runners)
             .HasConversion(converter)
             .IsRequired();
 
-        builder.HasDiscriminator<BetType>("BetType")
+        builder.Ignore(b => b.Type);
+
+        builder.HasDiscriminator<BetType>("Type")
         .HasValue<WinnerBet>(BetType.Winner);
     }
 

@@ -1,10 +1,8 @@
-﻿using System.Threading;
-using Application.Abstractions.BackgroundServices;
+﻿using Application.Abstractions.BackgroundServices;
 using Application.Abstractions.Messaging;
 using Application.Races.Create;
 using Application.Races.Get;
 using BackgroundService.Configuration;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SharedKernel;
@@ -61,8 +59,10 @@ internal sealed class RaceCreationJob : BaseBackgroundService<RaceCreationJobCon
                 var command = new CreateRaceCommand
                 {
                     LastRaceStartTime = lastRaceTime,
-                    AmountOfRacesToCreate = 10, // make configurable
-                    TimeBetweenRaces = _config.TimeBetweenRaces
+                    AmountOfRacesToCreate = _config.AmountOfRacesToCreate,
+                    TimeBetweenRaces = _config.TimeBetweenRaces,
+                    NumberOfRunners = _config.NumberOfRunners,
+                    BookmakerMargin = _config.BookmakerMargin,
                 };
 
                 _logger.LogInformation("Sending CreateRaceCommand with LastRaceStartTime: {LastRaceTime}, Amount: {Amount}, Interval: {Interval}",

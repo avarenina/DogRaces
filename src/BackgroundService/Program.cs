@@ -31,6 +31,7 @@ internal sealed class Program
 
                 // Register hosted service
                 services.AddHostedService<RaceCreationJob>();
+
             })
             .ConfigureLogging(logging =>
             {

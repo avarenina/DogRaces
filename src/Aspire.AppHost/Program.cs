@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Builder;
+
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 
 IResourceBuilder<PostgresDatabaseResource> database = builder
@@ -8,7 +10,7 @@ IResourceBuilder<PostgresDatabaseResource> database = builder
 
 IResourceBuilder<RedisResource> cache = builder.AddRedis("cache");
 
-builder.AddProject<Projects.Web_Api>("web-api")
+IResourceBuilder<ProjectResource> webApi = builder.AddProject<Projects.Web_Api>("web-api")
     .WithEnvironment("ConnectionStrings__Database", database)
     .WithEnvironment("ConnectionStrings__Redis", cache)
     .WithReference(database)
@@ -21,7 +23,7 @@ builder.AddProject<Projects.BackgroundService>("background-service")
     .WithEnvironment("ConnectionStrings__Redis", cache)
     .WithReference(database)
     .WithReference(cache)
-    .WaitFor(database)
-    .WaitFor(cache);
+    .WaitFor(webApi);
+
 
 builder.Build().Run();

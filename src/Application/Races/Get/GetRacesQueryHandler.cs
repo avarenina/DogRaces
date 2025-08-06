@@ -16,8 +16,6 @@ internal sealed class GetRacesQueryHandler(IApplicationDbContext context, IDateT
     {
         if(!query.IgnoreCache)
         {
-            
-
             // Try to read from cache
             string? cachedData = await distributedCache.GetStringAsync(CacheKeys.UpcomingRaces, cancellationToken);
             if (!string.IsNullOrEmpty(cachedData))
@@ -35,11 +33,19 @@ internal sealed class GetRacesQueryHandler(IApplicationDbContext context, IDateT
         .Where(r => r.StartTime > dateTimeProvider.UtcNow)
         .Include(r => r.Bets)
         .OrderByDescending(r => r.StartTime)
+        .AsNoTracking()
         .Select(r => new RaceResponse
         {
             Id = r.Id,
             StartTime = r.StartTime,
-            Bets = r.Bets,
+            Bets = r.Bets.Select(b => new BetResponse
+            {
+                Id = b.Id,
+                Odds = b.Odds,
+                Runners = b.Runners,
+                Status = b.Status,
+                Type = b.Type,
+            }).ToList(),
             IsCompleted = r.IsCompleted,
             CreatedAt = r.CreatedAt,
             CompletedAt = r.CompletedAt
