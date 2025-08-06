@@ -38,7 +38,7 @@ public sealed class RacesUpdateService : BackgroundService
         }
     }
 
-    private async Task SendRacesUpdate()
+    public async Task SendRacesUpdate()
     {
         using IServiceScope scope = _serviceProvider.CreateScope();
         IHubContext<RacesHub> hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<RacesHub>>();

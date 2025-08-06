@@ -1,7 +1,9 @@
 ﻿using System.Text;
 using Application.Abstractions.Data;
+using Application.Abstractions.Messaging;
 using Infrastructure.Database;
 using Infrastructure.DomainEvents;
+using Infrastructure.Messaging;
 using Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -49,7 +51,7 @@ public static class DependencyInjection
     private static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
     {
         string? redisConnectionString = configuration.GetConnectionString("Redis");
-
+        
         if (string.IsNullOrWhiteSpace(redisConnectionString))
         {
             throw new InvalidOperationException("Redis connection string is missing or empty in configuration.");
@@ -60,6 +62,19 @@ public static class DependencyInjection
 
         return services;
     }
+
+    public static IServiceCollection AddMessagePublishers(this IServiceCollection services)
+    {
+        services.AddSingleton<IMessagePublisher, RedisMessagePublisher>();
+        return services;
+    }
+
+    public static IServiceCollection AddMessageConsumers(this IServiceCollection services)
+    {
+        services.AddHostedService<RedisSubscriberService>();
+        return services;
+    }
+
 
     private static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
     {

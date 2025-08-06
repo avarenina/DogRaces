@@ -15,6 +15,7 @@ builder.Services.AddSwaggerGenWithAuth();
 
 builder.Services
     .AddApplication()
+    .AddMessageConsumers()
     .AddPresentation()
     .AddInfrastructure(builder.Configuration);
 

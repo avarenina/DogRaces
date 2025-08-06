@@ -1,4 +1,6 @@
-﻿using Web.Api.Infrastructure;
+﻿using Application.Abstractions.Messaging;
+using Web.Api.Infrastructure;
+using Web.Api.Services;
 
 namespace Web.Api;
 
@@ -14,6 +16,9 @@ public static class DependencyInjection
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+
+        // Register message handlers
+        services.AddScoped<IMessageHandler<RaceCreatedMessage>, RaceCreatedMessageHandler>();
 
         return services;
     }

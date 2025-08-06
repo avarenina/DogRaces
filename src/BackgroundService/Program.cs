@@ -27,6 +27,7 @@ internal sealed class Program
                 
                 // Register infrastructure services
                 services.AddInfrastructure(context.Configuration);
+                services.AddMessagePublishers();
 
                 // Register hosted service
                 services.AddHostedService<RaceCreationJob>();
