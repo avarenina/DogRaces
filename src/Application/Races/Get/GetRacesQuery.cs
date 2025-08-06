@@ -2,4 +2,4 @@
 
 namespace Application.Races.Get;
 
-public sealed record GetRacesQuery() : IQuery<List<RaceResponse>>;
+public sealed record GetRacesQuery(bool IgnoreCache = false) : IQuery<List<RaceResponse>>;

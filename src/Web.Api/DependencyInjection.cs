@@ -1,4 +1,5 @@
 ﻿using Application.Abstractions.Messaging;
+using Infrastructure;
 using Web.Api.Infrastructure;
 using Web.Api.Services;
 
@@ -16,6 +17,8 @@ public static class DependencyInjection
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+        services.AddMessagePublishers();
+        services.AddMessageConsumers();
 
         // Register message handlers
         services.AddScoped<IMessageHandler<RaceCreatedMessage>, RaceCreatedMessageHandler>();

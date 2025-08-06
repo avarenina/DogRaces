@@ -57,6 +57,11 @@ public static class DependencyInjection
             throw new InvalidOperationException("Redis connection string is missing or empty in configuration.");
         }
 
+        services.AddStackExchangeRedisCache(redisOptions =>
+        {
+            redisOptions.Configuration = redisConnectionString;
+        });
+
         var multiplexer = ConnectionMultiplexer.Connect(redisConnectionString);
         services.AddSingleton<IConnectionMultiplexer>(multiplexer);
 

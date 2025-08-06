@@ -14,7 +14,7 @@ public abstract class BaseBackgroundService<TConfig> : BackgroundService
         _config = config.Value;
     }
 
-    protected abstract Task ExecuteJobAsync(CancellationToken stoppingToken);
+    protected abstract Task ExecuteJobAsync(CancellationToken cancellationToken);
     protected abstract ILogger Logger { get; }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

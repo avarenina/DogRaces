@@ -2,12 +2,14 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Races;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using SharedKernel;
 
 namespace Application.Races.Update;
 
 internal sealed class UpdateRaceCommandHandler(
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    IDistributedCache distributedCache)
     : ICommandHandler<UpdateRaceCommand>
 {
     public async Task<Result> Handle(UpdateRaceCommand command, CancellationToken cancellationToken)
@@ -23,7 +25,9 @@ internal sealed class UpdateRaceCommandHandler(
         race.Result = command.Result;
 
         await context.SaveChangesAsync(cancellationToken);
-        
+
+        await distributedCache.RemoveAsync(CacheKeys.UpcomingRaces, cancellationToken);
+
         return Result.Success();
     }
 }

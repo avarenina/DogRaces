@@ -3,13 +3,15 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Races;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using SharedKernel;
 
 namespace Application.Races.Create;
 
 internal sealed class CreateRaceCommandHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    IDistributedCache distributedCache)
     : ICommandHandler<CreateRaceCommand, List<Guid>>
 {
     public async Task<Result<List<Guid>>> Handle(CreateRaceCommand command, CancellationToken cancellationToken)
@@ -39,6 +41,9 @@ internal sealed class CreateRaceCommandHandler(
         }
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // invalidate cache
+        await distributedCache.RemoveAsync(CacheKeys.UpcomingRaces, cancellationToken);
 
         return response;
     }

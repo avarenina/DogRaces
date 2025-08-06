@@ -2,13 +2,15 @@
 using Application.Abstractions.Messaging;
 using Domain.Races;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using SharedKernel;
 
 namespace Application.Races.Finish;
 
 internal sealed class FinishRaceCommandHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+    IDateTimeProvider dateTimeProvider,
+    IDistributedCache distributedCache)
     : ICommandHandler<FinishRaceCommand>
 {
     public async Task<Result> Handle(FinishRaceCommand command, CancellationToken cancellationToken)
@@ -32,6 +34,8 @@ internal sealed class FinishRaceCommandHandler(
         race.Raise(new RaceFinishedDomainEvent(race.Id));
 
         await context.SaveChangesAsync(cancellationToken);
+
+        await distributedCache.RemoveAsync(CacheKeys.UpcomingRaces, cancellationToken);
 
         return Result.Success();
     }

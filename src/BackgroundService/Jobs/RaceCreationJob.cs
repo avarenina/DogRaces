@@ -1,8 +1,10 @@
-﻿using Application.Abstractions.BackgroundServices;
+﻿using System.Threading;
+using Application.Abstractions.BackgroundServices;
 using Application.Abstractions.Messaging;
 using Application.Races.Create;
 using Application.Races.Get;
 using BackgroundService.Configuration;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SharedKernel;
@@ -29,11 +31,11 @@ internal sealed class RaceCreationJob : BaseBackgroundService<RaceCreationJobCon
 
     protected override ILogger Logger => _logger;
 
-    protected override async Task ExecuteJobAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteJobAsync(CancellationToken cancellationToken)
     {
         try
         {
-            Result<List<RaceResponse>> upcomingRacesResult = await _racesQueryHandler.Handle(new GetRacesQuery(), stoppingToken);
+            Result<List<RaceResponse>> upcomingRacesResult = await _racesQueryHandler.Handle(new GetRacesQuery(IgnoreCache: true), cancellationToken);
 
             if (upcomingRacesResult == null)
             {
@@ -59,14 +61,14 @@ internal sealed class RaceCreationJob : BaseBackgroundService<RaceCreationJobCon
                 var command = new CreateRaceCommand
                 {
                     LastRaceStartTime = lastRaceTime,
-                    AmountOfRacesToCreate = 10,
+                    AmountOfRacesToCreate = 10, // make configurable
                     TimeBetweenRaces = _config.TimeBetweenRaces
                 };
 
                 _logger.LogInformation("Sending CreateRaceCommand with LastRaceStartTime: {LastRaceTime}, Amount: {Amount}, Interval: {Interval}",
                     command.LastRaceStartTime, command.AmountOfRacesToCreate, command.TimeBetweenRaces);
 
-                Result result = await _createRaceHandler.Handle(command, stoppingToken);
+                Result result = await _createRaceHandler.Handle(command, cancellationToken);
 
                 if (result.IsSuccess)
                 {
