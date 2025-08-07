@@ -177,7 +177,7 @@
                     .withAutomaticReconnect()
                     .build();
 
-                connection.on("ReceiveUpcomingRaces", function (upcomingRaces) {
+                connection.on("UpcomingRaces", function (upcomingRaces) {
                     races = upcomingRaces;
                     displayRaces();
                 });

@@ -1,7 +1,11 @@
 ﻿using Application.Abstractions.Messaging;
+using Application.Races.Create;
 using Infrastructure;
 using Web.Api.Infrastructure;
-using Web.Api.Services;
+using Infrastructure.Messaging.Handlers;
+using Application.Abstractions;
+using Web.Api.Hubs;
+using Application.Races.Finish;
 
 namespace Web.Api;
 
@@ -22,6 +26,8 @@ public static class DependencyInjection
 
         // Register message handlers
         services.AddScoped<IMessageHandler<RaceCreatedMessage>, RaceCreatedMessageHandler>();
+        services.AddScoped<IMessageHandler<RaceFinishedMessage>, RaceFinishedMessageHandler>();
+        services.AddScoped<IClientsNotifier, ClientsNotifier>();
 
         return services;
     }

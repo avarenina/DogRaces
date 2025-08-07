@@ -1,9 +1,12 @@
 using System.Text.Json;
 using Application.Abstractions.Messaging;
+using Application.Races.Finish;
+using Application.Races.Create;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
+using System;
 
 namespace Infrastructure.Messaging;
 
@@ -11,30 +14,52 @@ internal sealed class RedisSubscriberService : BackgroundService
 {
     private readonly IConnectionMultiplexer _redis;
     private readonly ILogger<RedisSubscriberService> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
     public RedisSubscriberService(
         IConnectionMultiplexer redis,
-        ILogger<RedisSubscriberService> logger)
+        ILogger<RedisSubscriberService> logger,
+        IServiceProvider serviceProvider)
     {
         _redis = redis;
         _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         ISubscriber subscriber = _redis.GetSubscriber();
-        
-        await subscriber.SubscribeAsync(RedisChannel.Literal(SharedKernel.RedisChannels.RaceUpdates),  (channel, value) =>
+
+        await subscriber.SubscribeAsync(RedisChannel.Literal(SharedKernel.RedisChannels.RaceUpdates), async (channel, value) =>
         {
             try
             {
-                _logger.LogInformation("Received race update message: {Message}", value);
-                
-                // Parse the message
-                RaceCreatedMessage? message = JsonSerializer.Deserialize<RaceCreatedMessage>(value.ToString());
-                if (message is not null)
+                RedisEnvelope? envelope = JsonSerializer.Deserialize<RedisEnvelope>(value.ToString());
+                if (envelope is null)
                 {
-                    //await HandleRaceCreatedAsync(message);
+                    return;
+                }
+
+                switch (envelope.Type)
+                {
+                    case "RaceCreatedMessage":
+                        RaceCreatedMessage? created = JsonSerializer.Deserialize<RaceCreatedMessage>(envelope.Payload);
+                        if (created is not null)
+                        {
+                            using IServiceScope scope = _serviceProvider.CreateScope();
+                            IMessageHandler<RaceCreatedMessage> handler = scope.ServiceProvider.GetRequiredService<IMessageHandler<RaceCreatedMessage>>();
+                            await handler.HandleAsync(created);
+                        }
+                        break;
+                    case "RaceFinishedMessage":
+                        RaceFinishedMessage? finished = JsonSerializer.Deserialize<RaceFinishedMessage>(envelope.Payload);
+                        if (finished is not null)
+                        {
+                            using IServiceScope scope = _serviceProvider.CreateScope();
+                            IMessageHandler<RaceFinishedMessage> handler = scope.ServiceProvider.GetRequiredService<IMessageHandler<RaceFinishedMessage>>();
+                            await handler.HandleAsync(finished);
+                        }
+                        break;
                 }
             }
             catch (Exception ex)
@@ -51,8 +76,5 @@ internal sealed class RedisSubscriberService : BackgroundService
             await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
         }
     }
-
-   
 }
 
-public sealed record RaceCreatedMessage(Guid RaceId); 

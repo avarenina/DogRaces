@@ -47,5 +47,6 @@ internal sealed class CreateRaceCommandHandler(
         return Result.Success();
     }
 
-    public sealed record RaceCreatedMessage();
+    
 }
+public sealed record RaceCreatedMessage();
