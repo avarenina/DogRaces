@@ -8,6 +8,7 @@ using Infrastructure.DomainEvents;
 using Infrastructure.Messaging;
 using Infrastructure.RNG;
 using Infrastructure.Time;
+using Infrastructure.Wallet;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
         services.AddTransient<IRandomDoubleProvider, SecureRandomDoubleProvider>();
+        services.AddSingleton<IWalletService, WalletMockService>();
 
         return services;
     }
