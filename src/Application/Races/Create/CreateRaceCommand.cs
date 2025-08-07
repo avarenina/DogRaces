@@ -3,11 +3,11 @@ using Domain.Races;
 
 namespace Application.Races.Create;
 
-public sealed class CreateRaceCommand : ICommand
+public sealed record CreateRaceCommand : ICommand
 {
-    public DateTime? LastRaceStartTime { get; set; }
-    public int AmountOfRacesToCreate { get; set; }
-    public int TimeBetweenRaces { get; set; }  
-    public int NumberOfRunners { get; set; }
-    public double BookmakerMargin { get; set; }
+    public DateTime? LastRaceStartTime { get; init; }
+    public int AmountOfRacesToCreate { get; init; }
+    public int TimeBetweenRaces { get; init; }  
+    public int NumberOfRunners { get; init; }
+    public double BookmakerMargin { get; init; }
 }
