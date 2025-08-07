@@ -2,11 +2,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using BackgroundService.Configuration;
-using BackgroundService.Jobs;
 using Application;
 using Infrastructure;
 using SharedKernel;
 using Infrastructure.Time;
+using BackgroundService.Workers;
 
 namespace BackgroundService;
 
@@ -19,8 +19,9 @@ internal sealed class Program
             .ConfigureServices((context, services) =>
             {
                 // Bind configuration section to strongly typed config class
-                services.Configure<RaceCreationJobConfig>(
-                    context.Configuration.GetSection("RaceCreationJob"));
+                services.Configure<RaceManagementConfig>(
+                    context.Configuration.GetSection("RaceManagement"));
+
 
                 // Register application services
                 services.AddApplication();
@@ -30,7 +31,7 @@ internal sealed class Program
                 services.AddMessagePublishers();
 
                 // Register hosted service
-                services.AddHostedService<RaceCreationJob>();
+                services.AddHostedService<RaceManagementWorker>();
 
             })
             .ConfigureLogging(logging =>

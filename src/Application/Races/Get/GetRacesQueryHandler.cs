@@ -52,6 +52,7 @@ internal sealed class GetRacesQueryHandler(IApplicationDbContext context, IDateT
 
             List<RaceResponse> races = await context.Races
             .Where(r => r.StartTime > dateTimeProvider.UtcNow)
+            .Where(r => !r.IsCompleted)
             .Include(r => r.Bets)
             .OrderBy(r => r.StartTime)
             .AsNoTracking()

@@ -1,4 +1,5 @@
-﻿using Domain.Races;
+﻿using System.Globalization;
+using Domain.Races;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,11 +12,16 @@ internal sealed class RaceConfiguration : IEntityTypeConfiguration<Race>
         builder.HasKey(t => t.Id);
 
         builder.Property(r => r.Probabilities)
-            .HasConversion(
-                v => string.Join(",", v),                     // double[] → string
-                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                      .Select(double.Parse)
-                      .ToArray()                             // string → double[]
-            );
+        .HasConversion(
+            // Serialize using invariant culture and period as decimal separator
+            v => string.Join(";", v.Select(d => d.ToString(CultureInfo.InvariantCulture))),
+
+            // Deserialize safely with invariant culture
+            v => string.IsNullOrWhiteSpace(v)
+                ? Array.Empty<double>()
+                : v.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                   .Select(s => double.Parse(s, CultureInfo.InvariantCulture))
+                   .ToArray()
+        );
     }
 }

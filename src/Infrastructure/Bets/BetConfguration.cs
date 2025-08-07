@@ -31,7 +31,8 @@ internal sealed class BetConfiguration : IEntityTypeConfiguration<Bet>
         builder.Ignore(b => b.Type);
 
         builder.HasDiscriminator<BetType>("Type")
-        .HasValue<WinnerBet>(BetType.Winner);
+        .HasValue<WinnerBet>(BetType.Winner)
+        .HasValue<WithinFirstThreeBet>(BetType.WithinFirstThree);
     }
 
     // TODO: Move to separate helper

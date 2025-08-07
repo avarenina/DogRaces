@@ -5,6 +5,7 @@ using Application.Abstractions.Messaging;
 using Domain.Races;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 using SharedKernel;
 
 namespace Application.Races.Create;
@@ -13,10 +14,11 @@ internal sealed class CreateRaceCommandHandler(
     IApplicationDbContext context,
     IDateTimeProvider dateTimeProvider,
     IDistributedCache distributedCache,
-    IRaceFactory raceFactory)
-    : ICommandHandler<CreateRaceCommand, List<Guid>>
+    IRaceFactory raceFactory,
+    IMessagePublisher messagePublisher)
+    : ICommandHandler<CreateRaceCommand>
 {
-    public async Task<Result<List<Guid>>> Handle(CreateRaceCommand command, CancellationToken cancellationToken)
+    public async Task<Result> Handle(CreateRaceCommand command, CancellationToken cancellationToken)
     {
         DateTime startTime = command.LastRaceStartTime ?? dateTimeProvider.UtcNow;
 
@@ -38,6 +40,12 @@ internal sealed class CreateRaceCommandHandler(
         // invalidate cache
         await distributedCache.RemoveAsync(CacheKeys.UpcomingRaces, cancellationToken);
 
-        return response;
+        // publish event that new races have been added
+        var message = new RaceCreatedMessage();
+        await messagePublisher.PublishAsync(RedisChannels.RaceUpdates, message);
+
+        return Result.Success();
     }
+
+    public sealed record RaceCreatedMessage();
 }
