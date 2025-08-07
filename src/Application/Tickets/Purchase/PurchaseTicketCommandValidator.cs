@@ -1,26 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace Application.Tickets.Purchase;
-public class PurchaseTicketCommandValidator : AbstractValidator<PurchaseTicketCommand>
-{
-    public PurchaseTicketCommandValidator()
-    {
-        RuleFor(c => c.Payin)
-            .InclusiveBetween(1, 100)
-            .WithMessage("Payin must be between 1 and 100.");
 
-        RuleFor(x => x.Id)
+internal sealed class PurchaseTicketCommandValidator : AbstractValidator<PurchaseTicketCommand>
+{
+    public PurchaseTicketCommandValidator(TicketValidationOptions options)
+    {
+        RuleFor(c => c.Id)
             .NotEmpty().WithMessage("Id must be a valid non-empty GUID.");
+
+        RuleFor(c => c.Payin)
+            .InclusiveBetween(options.MinPayin, options.MaxPayin)
+            .WithMessage($"Payin must be between {options.MinPayin} and {options.MaxPayin}.");
 
         RuleFor(c => c.Bets)
             .NotNull().WithMessage("Bets list must not be null.")
             .Must(bets => bets.Any()).WithMessage("Bets list must not be empty.")
-            .Must(bets => bets.Count <= 10).WithMessage("You can select up to 10 bets maximum.");
+            .Must(bets => bets.Count <= options.MaxBets).WithMessage($"You can select up to {options.MaxBets} bets maximum.")
+            .Must(bets => bets.Distinct().Count() == bets.Count).WithMessage("Duplicate bet IDs are not allowed.");
 
         RuleForEach(c => c.Bets)
             .NotEqual(Guid.Empty).WithMessage("Each Bet ID must be a valid non-empty GUID.");

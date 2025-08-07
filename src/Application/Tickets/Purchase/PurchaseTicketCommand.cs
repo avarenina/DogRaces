@@ -2,9 +2,9 @@
 
 namespace Application.Tickets.Purchase;
 
-public sealed class PurchaseTicketCommand : ICommand
+public sealed record PurchaseTicketCommand : ICommand
 {
-    public Guid Id { get; set; }
-    public decimal Payin {  get; set; }
-    public List<Guid> Bets { get; set; }
+    public Guid Id { get; init; }
+    public decimal Payin { get; init; }
+    public List<Guid> Bets { get; init; }
 }

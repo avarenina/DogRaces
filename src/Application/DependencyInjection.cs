@@ -2,6 +2,7 @@
 using Application.Abstractions.Behaviors;
 using Application.Abstractions.Messaging;
 using Application.Races.Create;
+using Application.Tickets.Purchase;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using SharedKernel;
@@ -37,10 +38,15 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
 
+        // Strongly-typed validation options for ticket purchase
+        services.AddSingleton(new Application.Tickets.Purchase.TicketValidationOptions());
+        services.AddTransient<Application.Tickets.Purchase.ITicketPurchaseValidator, Application.Tickets.Purchase.TicketPurchaseValidator>();
+
         services.AddScoped<IProbabilityCalculator, ProbabilityCalculator>();
 
         services.AddTransient<IRaceFactory, RaceFactory>();
         services.AddTransient<IBetFactory, BetFactory>();
+        services.AddTransient<ITicketFactory, TicketFactory>();
 
         return services;
     }
