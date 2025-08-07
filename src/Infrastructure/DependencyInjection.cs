@@ -2,11 +2,14 @@
 using Application.Abstractions;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Infrastructure.Cache;
 using Infrastructure.Database;
 using Infrastructure.DomainEvents;
 using Infrastructure.Messaging;
 using Infrastructure.RNG;
 using Infrastructure.Time;
+using Medallion.Threading;
+using Medallion.Threading.Redis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
@@ -55,7 +58,7 @@ public static class DependencyInjection
     private static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
     {
         string? redisConnectionString = configuration.GetConnectionString("Redis");
-        
+
         if (string.IsNullOrWhiteSpace(redisConnectionString))
         {
             throw new InvalidOperationException("Redis connection string is missing or empty in configuration.");
@@ -66,8 +69,18 @@ public static class DependencyInjection
             redisOptions.Configuration = redisConnectionString;
         });
 
+        // Register a singleton Redis multiplexer
         services.AddSingleton<IConnectionMultiplexer>(sp =>
             ConnectionMultiplexer.Connect(redisConnectionString));
+
+        // Register Medallion's distributed lock provider using the same multiplexer
+        services.AddSingleton<IDistributedLockProvider>(sp =>
+        {
+            IConnectionMultiplexer multiplexer = sp.GetRequiredService<IConnectionMultiplexer>();
+            return new RedisDistributedSynchronizationProvider(multiplexer.GetDatabase());
+        });
+
+        services.AddSingleton<IDistributedLockService, DistributedLockService>();
 
         return services;
     }

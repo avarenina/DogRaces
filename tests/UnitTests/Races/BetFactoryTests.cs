@@ -16,7 +16,8 @@ public class BetFactoryTests
         var factory = new BetFactory();
 
         // Act
-        List<Bet> bets = factory.CreateWinnerBets(race);
+        List<Bet> bets = [.. factory.Create(race).Where(b => b is WinnerBet)];
+       
 
         // Assert
         bets.Count.ShouldBe(3);
@@ -36,7 +37,7 @@ public class BetFactoryTests
         var factory = new BetFactory();
 
         // Act
-        List<Bet> bets = factory.CreateWithinFirstThreeBets(race);
+        List<Bet> bets = [.. factory.Create(race).Where(b => b is WithinFirstThreeBet)];
 
         // Assert
         bets.Count.ShouldBe(3);
@@ -49,30 +50,18 @@ public class BetFactoryTests
     }
 
     [Fact]
-    public void CreateWinnerBets_WithNoProbabilities_ShouldReturnEmptyList()
+    public void CreateBets_WithNoProbabilities_ShouldReturnEmptyList()
     {
         // Arrange
         var race = new Race(Guid.NewGuid(), [], DateTime.UtcNow.AddHours(1), DateTime.UtcNow, RaceStatus.Open);
         var factory = new BetFactory();
 
         // Act
-        List<Bet> bets = factory.CreateWinnerBets(race);
+        List<Bet> bets = factory.Create(race);
 
         // Assert
         bets.ShouldBeEmpty();
     }
 
-    [Fact]
-    public void CreateWithinFirstThreeBets_WithNoProbabilities_ShouldReturnEmptyList()
-    {
-        // Arrange
-        var race = new Race(Guid.NewGuid(), [], DateTime.UtcNow.AddHours(1), DateTime.UtcNow, RaceStatus.Open);
-        var factory = new BetFactory();
-
-        // Act
-        List<Bet> bets = factory.CreateWithinFirstThreeBets(race);
-
-        // Assert
-        bets.ShouldBeEmpty();
-    }
+    
 }

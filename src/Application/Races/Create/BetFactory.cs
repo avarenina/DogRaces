@@ -8,9 +8,15 @@ using Domain.Bets;
 using Domain.Races;
 
 namespace Application.Races.Create;
-public sealed class BetFactory : IBetFactory
+internal sealed class BetFactory : IBetFactory
 {
-    public List<Bet> CreateWinnerBets(Race race)
+
+    public List<Bet> Create(Race race)
+    {
+        return [.. CreateWinnerBets(race), .. CreateWithinFirstThreeBets(race)];
+    }
+
+    private List<Bet> CreateWinnerBets(Race race)
     {
         var bets = new List<Bet>();
 
@@ -31,7 +37,7 @@ public sealed class BetFactory : IBetFactory
         return bets;
     }
 
-    public List<Bet> CreateWithinFirstThreeBets(Race race)
+    private List<Bet> CreateWithinFirstThreeBets(Race race)
     {
         var bets = new List<Bet>();
 

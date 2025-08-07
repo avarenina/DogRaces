@@ -18,7 +18,8 @@ public class RaceFactory(
 
         var race = new Race(id, probabilities, startTime, createdAt, RaceStatus.Open);
 
-        race.Bets = [.. betFactory.CreateWinnerBets(race), .. betFactory.CreateWithinFirstThreeBets(race)];
+        race.Bets = betFactory.Create(race);
+
         race.Raise(new RaceCreatedDomainEvent(race.Id));
 
         return race;

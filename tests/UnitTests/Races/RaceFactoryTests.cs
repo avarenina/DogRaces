@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Moq;
-using Shouldly;
-
-namespace UnitTests.Races;
+﻿namespace UnitTests.Races;
 public class RaceFactoryTests
 {
     [Fact]
@@ -22,14 +14,31 @@ public class RaceFactoryTests
 
         int numberOfRunners = 3;
         double bookmakerMargin = 0.1;
-        double[] probabilities = [0.5, 0.3, 0.2];
-        mockProbabilityCalculator.Setup(x => x.CalculateWinnerProbabilities(numberOfRunners, bookmakerMargin)).Returns(probabilities);
+        double[] probabilities = new double[] { 0.5, 0.3, 0.2 };
+        mockProbabilityCalculator.Setup(x => x.CalculateWinnerProbabilities(numberOfRunners, bookmakerMargin))
+                                 .Returns(probabilities);
 
-        //var race = new Domain.Races.Race(Guid.NewGuid(), probabilities, now.AddHours(1), now, Domain.Races.RaceStatus.Open);
-        var winnerBets = new List<Domain.Bets.Bet> { new Domain.Bets.WinnerBet { Id = Guid.NewGuid(), Odds = 2.0m, Runners = [1], Status = Domain.Bets.BetStatus.InProgress, Type = Domain.Bets.BetType.Winner } };
-        var withinFirstThreeBets = new List<Domain.Bets.Bet> { new Domain.Bets.WithinFirstThreeBet { Id = Guid.NewGuid(), Odds = 1.5m, Runners = [2], Status = Domain.Bets.BetStatus.InProgress, Type = Domain.Bets.BetType.WithinFirstThree } };
-        mockBetFactory.Setup(x => x.CreateWinnerBets(It.IsAny<Domain.Races.Race>())).Returns(winnerBets);
-        mockBetFactory.Setup(x => x.CreateWithinFirstThreeBets(It.IsAny<Domain.Races.Race>())).Returns(withinFirstThreeBets);
+        // Create both sets of bets
+        var winnerBet = new Domain.Bets.WinnerBet
+        {
+            Id = Guid.NewGuid(),
+            Odds = 2.0m,
+            Runners = new List<int> { 1 },
+            Status = Domain.Bets.BetStatus.InProgress,
+            Type = Domain.Bets.BetType.Winner
+        };
+
+        var withinFirstThreeBet = new Domain.Bets.WithinFirstThreeBet
+        {
+            Id = Guid.NewGuid(),
+            Odds = 1.5m,
+            Runners = new List<int> { 2 },
+            Status = Domain.Bets.BetStatus.InProgress,
+            Type = Domain.Bets.BetType.WithinFirstThree
+        };
+
+        var combinedBets = new List<Domain.Bets.Bet> { winnerBet, withinFirstThreeBet };
+        mockBetFactory.Setup(x => x.Create(It.IsAny<Domain.Races.Race>())).Returns(combinedBets);
 
         var factory = new Application.Races.Create.RaceFactory(
             mockDateTimeProvider.Object,
@@ -48,8 +57,8 @@ public class RaceFactoryTests
         result.StartTime.ShouldBe(startTime);
         result.CreatedAt.ShouldBe(now);
         result.Status.ShouldBe(Domain.Races.RaceStatus.Open);
-        result.Bets.ShouldContain(winnerBets[0]);
-        result.Bets.ShouldContain(withinFirstThreeBets[0]);
+        result.Bets.ShouldContain(winnerBet);
+        result.Bets.ShouldContain(withinFirstThreeBet);
         result.Bets.Count.ShouldBe(2);
     }
 }
