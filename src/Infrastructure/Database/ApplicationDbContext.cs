@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Data;
 using Domain.Bets;
 using Domain.Races;
+using Domain.Ticket;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -14,6 +15,8 @@ public sealed class ApplicationDbContext(
 {
     public DbSet<Race> Races { get; set; }
     public DbSet<Bet> Bets { get; set; }
+    public DbSet<Ticket> Tickets { get; set; }
+    public DbSet<TicketBet> TicketBets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

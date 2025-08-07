@@ -132,12 +132,44 @@
             text-align: center;
             background: #fafafa;
         }
+        .bet-square.selected { background: #e8f5e9; border-color: #2e7d32; }
         .bet-square-winning { border-color: #2e7d32; }
         .bet-square-losing { border-color: #c62828; }
         .runner-number { font-size: 18px; font-weight: 700; color: #333; }
         .bet-odds { font-weight: 600; font-size: 12px; margin-top: 2px; }
         .odds-winning { color: #2e7d32; }
         .odds-losing { color: #c62828; }
+        
+        /* Layout with ticket sidebar */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        .left-column { min-width: 0; }
+        .ticket-sidebar {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            height: fit-content;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        .ticket-title { margin: 0 0 8px 0; font-size: 20px; }
+        .ticket-subtitle { margin: 0 0 12px 0; color: #666; font-size: 13px; }
+        .selected-bets { list-style: none; padding: 0; margin: 0 0 12px 0; display: flex; flex-direction: column; gap: 8px; }
+        .selected-bet-item { display: flex; align-items: center; justify-content: space-between; border: 1px solid #eee; border-radius: 8px; padding: 8px 10px; background: #fafafa; }
+        .selected-bet-info { font-size: 13px; color: #333; }
+        .remove-bet-btn { background: transparent; border: none; color: #c62828; font-weight: 600; cursor: pointer; }
+        .ticket-empty { color: #777; font-style: italic; margin: 8px 0 12px 0; }
+        .ticket-controls { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+        .payin-input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; }
+        .purchase-btn { background: #667eea; color: #fff; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; font-weight: 600; }
+        .purchase-btn:disabled { background: #aab0ee; cursor: not-allowed; }
+        .ticket-msg { margin-top: 10px; font-size: 13px; }
+        .ticket-msg.error { color: #c62828; }
+        .ticket-msg.success { color: #2e7d32; }
         
         .no-races {
             text-align: center;
@@ -179,14 +211,29 @@
             Disconnected from server
         </div>
         
-        <div class="races-container">
-            <h2>Upcoming Races</h2>
-            <div id="racesContainer" class="loading">
-                <div class="spinner"></div>
-                <p>Connecting to server...</p>
+        <div class="content-grid">
+            <div class="left-column">
+                <div class="races-container">
+                    <h2>Upcoming Races</h2>
+                    <div id="racesContainer" class="loading">
+                        <div class="spinner"></div>
+                        <p>Connecting to server...</p>
+                    </div>
+                    <h2 style="margin-top: 28px;">Completed Races</h2>
+                    <div id="completedContainer" class="no-races">No completed races yet</div>
+                </div>
             </div>
-            <h2 style="margin-top: 28px;">Completed Races</h2>
-            <div id="completedContainer" class="no-races">No completed races yet</div>
+            <div class="ticket-sidebar" id="ticketSidebar">
+                <h2 class="ticket-title">Ticket</h2>
+                <p class="ticket-subtitle">Pick at most one bet per race</p>
+                <div id="ticketEmpty" class="ticket-empty">No bets selected</div>
+                <ul id="selectedBetsList" class="selected-bets"></ul>
+                <div class="ticket-controls">
+                    <input id="payinInput" class="payin-input" type="number" min="1" step="0.01" placeholder="Pay-in" />
+                    <button id="purchaseBtn" class="purchase-btn" disabled>Purchase</button>
+                </div>
+                <div id="ticketMessage" class="ticket-msg" style="display:none;"></div>
+            </div>
         </div>
     </div>
 
@@ -240,6 +287,8 @@
             statusElement.className = `status ${isConnected ? 'connected' : 'disconnected'}`;
         }
 
+        let selectedBetsByRace = new Map(); // raceId -> { id, raceId, type, runner, odds }
+
         function displayRaces() {
             const container = document.getElementById("racesContainer");
             const completedContainer = document.getElementById("completedContainer");
@@ -263,8 +312,9 @@
                                     const squareClass = getBetSquareClass(bet.status);
                                     const oddsClass = getBetStatusClass(bet.status);
                                     const runner = (bet.runners && bet.runners.length) ? bet.runners[0] : '';
+                                    const isSelected = selectedBetsByRace.get(race.id)?.id === bet.id;
                                     return `
-                                      <div class="bet-square ${squareClass}">
+                                      <div class="bet-square ${squareClass} ${isSelected ? 'selected' : ''}" data-bet-id="${bet.id}" data-race-id="${race.id}" data-type="${bet.type}" data-runner="${runner}" data-odds="${bet.odds}">
                                         <div class="runner-number">${runner}</div>
                                         <div class="bet-odds ${oddsClass}">${bet.odds}</div>
                                       </div>`;
@@ -424,8 +474,126 @@
             return '';
         }
 
+        // Ticket functions
+        function renderTicket() {
+            const empty = document.getElementById('ticketEmpty');
+            const list = document.getElementById('selectedBetsList');
+            const purchaseBtn = document.getElementById('purchaseBtn');
+            const payinInput = document.getElementById('payinInput');
+
+            const items = Array.from(selectedBetsByRace.values());
+            const hasItems = items.length > 0;
+            empty.style.display = hasItems ? 'none' : 'block';
+            list.innerHTML = hasItems ? items.map(x => {
+                const typeText = getBetTypeText(Number(x.type));
+                const raceShort = String(x.raceId).slice(0, 8);
+                return `
+                    <li class="selected-bet-item" data-race-id="${x.raceId}">
+                        <div class="selected-bet-info">Race ${raceShort} • ${typeText} • Runner ${x.runner} @ ${x.odds}</div>
+                        <button class="remove-bet-btn" data-action="remove">Remove</button>
+                    </li>`;
+            }).join('') : '';
+
+            const payin = Number(payinInput.value);
+            purchaseBtn.disabled = !(hasItems && !isNaN(payin) && payin > 0);
+        }
+
+        function toggleBetSelection(bet) {
+            const existing = selectedBetsByRace.get(bet.raceId);
+            if (existing && existing.id === bet.id) {
+                selectedBetsByRace.delete(bet.raceId);
+            } else {
+                selectedBetsByRace.set(bet.raceId, bet);
+            }
+            renderTicket();
+            displayRaces();
+        }
+
+        // Event delegation for bet selection (only in upcoming races container)
+        document.addEventListener('click', function (e) {
+            const square = e.target.closest('.bet-square');
+            if (!square) return;
+            if (!square.closest('#racesContainer')) return;
+            const bet = {
+                id: square.dataset.betId,
+                raceId: square.dataset.raceId,
+                type: square.dataset.type,
+                runner: square.dataset.runner,
+                odds: square.dataset.odds
+            };
+            toggleBetSelection(bet);
+        });
+
+        // Remove bet from ticket
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.remove-bet-btn');
+            if (!btn) return;
+            const item = btn.closest('.selected-bet-item');
+            if (!item) return;
+            const raceId = item.dataset.raceId;
+            selectedBetsByRace.delete(raceId);
+            renderTicket();
+            displayRaces();
+        });
+
+        // Enable/disable purchase button on payin change
+        document.addEventListener('input', function (e) {
+            if (e.target && e.target.id === 'payinInput') {
+                renderTicket();
+            }
+        });
+
+        // Purchase handler
+        document.getElementById('purchaseBtn').addEventListener('click', async function () {
+            const messageEl = document.getElementById('ticketMessage');
+            messageEl.style.display = 'none';
+            messageEl.className = 'ticket-msg';
+            messageEl.textContent = '';
+
+            const payin = Number(document.getElementById('payinInput').value);
+            const bets = Array.from(selectedBetsByRace.values()).map(x => x.id);
+            if (!bets.length || isNaN(payin) || payin <= 0) {
+                return;
+            }
+
+            const payload = {
+                ticketId: (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8); return v.toString(16); }),
+                payin: payin,
+                bets: bets
+            };
+
+            try {
+                const resp = await fetch('/tickets/purchase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (resp.ok) {
+                    // Success (expect 204 No Content)
+                    selectedBetsByRace.clear();
+                    document.getElementById('payinInput').value = '';
+                    renderTicket();
+                    displayRaces();
+                    messageEl.textContent = 'Ticket purchased successfully';
+                    messageEl.className = 'ticket-msg success';
+                    messageEl.style.display = 'block';
+                } else {
+                    let err = 'Purchase failed';
+                    try { const data = await resp.json(); err = data.title || data.detail || err; } catch {}
+                    messageEl.textContent = err;
+                    messageEl.className = 'ticket-msg error';
+                    messageEl.style.display = 'block';
+                }
+            } catch (ex) {
+                messageEl.textContent = 'Network error while purchasing ticket';
+                messageEl.className = 'ticket-msg error';
+                messageEl.style.display = 'block';
+            }
+        });
+
         // Start the connection when the page loads
         startConnection();
+        renderTicket();
     </script>
 </body>
 </html>

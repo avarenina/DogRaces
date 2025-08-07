@@ -5,6 +5,7 @@ using Domain.Races;
 using Microsoft.Extensions.Caching.Distributed;
 using Moq;
 using SharedKernel;
+using Application.Abstractions.Messaging;
 
 namespace UnitTests.Races;
 
@@ -18,6 +19,7 @@ public class CreateRaceCommandHandlerTests
         var mockDateTimeProvider = new Mock<IDateTimeProvider>();
         var mockCache = new Mock<IDistributedCache>();
         var mockRaceFactory = new Mock<IRaceFactory>();
+        var mockMessagePublisher = new Mock<IMessagePublisher>();
         var now = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         mockDateTimeProvider.Setup(x => x.UtcNow).Returns(now);
         var race = new Race(Guid.NewGuid(), [0.5, 0.3, 0.2], now.AddHours(1), now, RaceStatus.Open);
@@ -26,7 +28,7 @@ public class CreateRaceCommandHandlerTests
         mockContext.Setup(c => c.Races.Add(It.IsAny<Race>())).Callback<Race>(r => races.Add(r));
         mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
         mockCache.Setup(c => c.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-        var handler = new CreateRaceCommandHandler(mockContext.Object, mockDateTimeProvider.Object, mockCache.Object, mockRaceFactory.Object);
+        var handler = new CreateRaceCommandHandler(mockContext.Object, mockDateTimeProvider.Object, mockCache.Object, mockRaceFactory.Object, mockMessagePublisher.Object);
         var command = new CreateRaceCommand
         {
             LastRaceStartTime = null,
@@ -36,10 +38,9 @@ public class CreateRaceCommandHandlerTests
             BookmakerMargin = 0.1
         };
         // Act
-        Result<List<Guid>> result = await handler.Handle(command, CancellationToken.None);
+        Result result = await handler.Handle(command, CancellationToken.None);
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.Count.ShouldBe(1);
         races.Count.ShouldBe(1);
         races[0].ShouldBe(race);
         mockCache.Verify(c => c.RemoveAsync(CacheKeys.UpcomingRaces, It.IsAny<CancellationToken>()), Times.Once);
@@ -53,6 +54,7 @@ public class CreateRaceCommandHandlerTests
         var mockDateTimeProvider = new Mock<IDateTimeProvider>();
         var mockCache = new Mock<IDistributedCache>();
         var mockRaceFactory = new Mock<IRaceFactory>();
+        var mockMessagePublisher = new Mock<IMessagePublisher>();
         var now = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         mockDateTimeProvider.Setup(x => x.UtcNow).Returns(now);
         var createdRaces = new List<Race>();
@@ -61,7 +63,7 @@ public class CreateRaceCommandHandlerTests
         mockContext.Setup(c => c.Races.Add(It.IsAny<Race>())).Callback<Race>(r => createdRaces.Add(r));
         mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
         mockCache.Setup(c => c.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-        var handler = new CreateRaceCommandHandler(mockContext.Object, mockDateTimeProvider.Object, mockCache.Object, mockRaceFactory.Object);
+        var handler = new CreateRaceCommandHandler(mockContext.Object, mockDateTimeProvider.Object, mockCache.Object, mockRaceFactory.Object, mockMessagePublisher.Object);
         var command = new CreateRaceCommand
         {
             LastRaceStartTime = now,
@@ -71,10 +73,9 @@ public class CreateRaceCommandHandlerTests
             BookmakerMargin = 0.1
         };
         // Act
-        Result<List<Guid>> result = await handler.Handle(command, CancellationToken.None);
+        Result result = await handler.Handle(command, CancellationToken.None);
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.Count.ShouldBe(3);
         createdRaces.Count.ShouldBe(3);
         createdRaces[0].StartTime.ShouldBe(now.AddSeconds(60));
         createdRaces[1].StartTime.ShouldBe(now.AddSeconds(120));
@@ -89,7 +90,8 @@ public class CreateRaceCommandHandlerTests
         var mockDateTimeProvider = new Mock<IDateTimeProvider>();
         var mockCache = new Mock<IDistributedCache>();
         var mockRaceFactory = new Mock<IRaceFactory>();
-        var handler = new CreateRaceCommandHandler(mockContext.Object, mockDateTimeProvider.Object, mockCache.Object, mockRaceFactory.Object);
+        var mockMessagePublisher = new Mock<IMessagePublisher>();
+        var handler = new CreateRaceCommandHandler(mockContext.Object, mockDateTimeProvider.Object, mockCache.Object, mockRaceFactory.Object, mockMessagePublisher.Object);
         var command = new CreateRaceCommand
         {
             LastRaceStartTime = null,
@@ -99,10 +101,9 @@ public class CreateRaceCommandHandlerTests
             BookmakerMargin = 0.1
         };
         // Act
-        Result<List<Guid>> result = await handler.Handle(command, CancellationToken.None);
+        Result result = await handler.Handle(command, CancellationToken.None);
         // Assert
         result.IsSuccess.ShouldBeTrue();
-        result.Value.Count.ShouldBe(0);
         mockContext.Verify(c => c.Races.Add(It.IsAny<Race>()), Times.Never);
         mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -115,6 +116,7 @@ public class CreateRaceCommandHandlerTests
         var mockDateTimeProvider = new Mock<IDateTimeProvider>();
         var mockCache = new Mock<IDistributedCache>();
         var mockRaceFactory = new Mock<IRaceFactory>();
+        var mockMessagePublisher = new Mock<IMessagePublisher>();
         var now = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         var createdRaces = new List<Race>();
         mockRaceFactory.Setup(f => f.Create(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<double>()))
@@ -122,7 +124,7 @@ public class CreateRaceCommandHandlerTests
         mockContext.Setup(c => c.Races.Add(It.IsAny<Race>())).Callback<Race>(r => createdRaces.Add(r));
         mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
         mockCache.Setup(c => c.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-        var handler = new CreateRaceCommandHandler(mockContext.Object, mockDateTimeProvider.Object, mockCache.Object, mockRaceFactory.Object);
+        var handler = new CreateRaceCommandHandler(mockContext.Object, mockDateTimeProvider.Object, mockCache.Object, mockRaceFactory.Object, mockMessagePublisher.Object);
         var command = new CreateRaceCommand
         {
             LastRaceStartTime = now,
@@ -132,7 +134,7 @@ public class CreateRaceCommandHandlerTests
             BookmakerMargin = 0.1
         };
         // Act
-        Result<List<Guid>> result = await handler.Handle(command, CancellationToken.None);
+        Result result = await handler.Handle(command, CancellationToken.None);
         // Assert
         result.IsSuccess.ShouldBeTrue();
         createdRaces[0].StartTime.ShouldBe(now.AddSeconds(30));
