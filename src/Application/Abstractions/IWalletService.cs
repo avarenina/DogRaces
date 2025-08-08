@@ -11,4 +11,6 @@ public interface IWalletService
     Task<Result> ReserveFundsAsync(Guid userId, decimal amount, Guid transactionId, CancellationToken cancellationToken);
     Task<Result> ConfirmFundsAsync(Guid transactionId, CancellationToken cancellationToken);
     Task<Result> RollbackFundsAsync(Guid transactionId, CancellationToken cancellationToken);
+    Task<Result> FundAsync(Guid userId, decimal amount, Guid transactionId, CancellationToken cancellationToken);
+    Task<decimal> GetBalanceAsync(Guid userId, CancellationToken cancellationToken);
 }

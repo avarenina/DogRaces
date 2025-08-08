@@ -18,6 +18,7 @@ public sealed class RacesHub : Hub
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, "RacesGroup");
         await _clientsNotifier.NotifyNewUpcomingRacesAsync();
+        await _clientsNotifier.NotifyBalanceChangedAsync();
     }
 
     public async Task LeaveRacesGroup()

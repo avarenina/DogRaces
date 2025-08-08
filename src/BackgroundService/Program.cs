@@ -22,6 +22,9 @@ internal sealed class Program
                 services.Configure<RaceManagementConfig>(
                     context.Configuration.GetSection("RaceManagement"));
 
+                services.Configure<TicketProcessingConfig>(
+                    context.Configuration.GetSection("TicketProcessing"));
+
 
                 // Register application services
                 services.AddApplication();
@@ -32,6 +35,7 @@ internal sealed class Program
 
                 // Register hosted service
                 services.AddHostedService<RaceManagementWorker>();
+                services.AddHostedService<TicketProcessingWorker>();
 
             })
             .ConfigureLogging(logging =>

@@ -41,7 +41,6 @@ internal sealed class RaceManagementWorker : BaseBackgroundService<RaceManagemen
         {
             _logger.LogInformation("Starting RaceManagementWorker job cycle...");
 
-            // Step 1: Fetch all upcoming races
             Result<List<RaceResponse>> racesResult = await racesQueryHandler.Handle(new GetRacesQuery(IgnoreCache: true), cancellationToken);
 
             if (racesResult is null || !racesResult.IsSuccess)
@@ -53,7 +52,6 @@ internal sealed class RaceManagementWorker : BaseBackgroundService<RaceManagemen
             List<RaceResponse> races = racesResult.Value;
             _logger.LogInformation("Retrieved {Count} upcoming races.", races.Count);
 
-            // Step 2: Create new races if needed
             if (races.Count < 5)
             {
                 DateTime? lastRaceStartTime = races.Count > 0 ? races[^1].StartTime : null;
@@ -82,7 +80,6 @@ internal sealed class RaceManagementWorker : BaseBackgroundService<RaceManagemen
                 }
             }
 
-            // Step 3: Finish the next race when its time comes
             if (races.Count > 0)
             {
                 RaceResponse nextRace = races[0];

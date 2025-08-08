@@ -9,9 +9,9 @@ using SharedKernel;
 namespace Infrastructure.Wallet;
 public class WalletMockService : IWalletService
 {
-    private decimal _balance = 100m; // Starting balance
+    private decimal _balance = 100m; 
     private readonly Dictionary<Guid, decimal> _reservations = [];
-    private readonly Lock _lock = new(); // For thread-safety
+    private readonly Lock _lock = new(); 
 
     public Task<Result> ReserveFundsAsync(Guid userId, decimal amount, Guid transactionId, CancellationToken cancellationToken)
     {
@@ -56,11 +56,22 @@ public class WalletMockService : IWalletService
         }
     }
 
-    public decimal GetBalance() // Optional: for debugging/testing
+    public Task<decimal> GetBalanceAsync(Guid userId, CancellationToken cancellationToken) 
     {
         lock (_lock)
         {
-            return _balance;
+            return Task.FromResult(_balance);
+        }
+    }
+
+    public Task<Result> FundAsync(Guid userId, decimal amount, Guid transactionId, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _balance += amount;
+            _reservations[transactionId] = amount;
+
+            return Task.FromResult(Result.Success());
         }
     }
 }

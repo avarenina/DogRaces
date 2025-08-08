@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Application.Abstractions;
+using Domain.Abstractions;
 
 namespace Application;
 public sealed class ProbabilityCalculator : IProbabilityCalculator

@@ -11,11 +11,13 @@ internal sealed class ClientsNotifier : IClientsNotifier
 {
     private readonly IHubContext<RacesHub> _hubContext;
     private readonly IQueryHandler<GetRacesQuery, List<RaceResponse>> _getRacesQueryHandler;
+    private readonly IWalletService _walletService;
 
-    public ClientsNotifier(IHubContext<RacesHub> hubContext, IQueryHandler<GetRacesQuery, List<RaceResponse>> getRacesQueryHandler)
+    public ClientsNotifier(IHubContext<RacesHub> hubContext, IQueryHandler<GetRacesQuery, List<RaceResponse>> getRacesQueryHandler, IWalletService walletService)
     {
         _hubContext = hubContext;
         _getRacesQueryHandler = getRacesQueryHandler;
+        _walletService = walletService;
     }
 
     public async Task NotifyNewUpcomingRacesAsync(CancellationToken cancellationToken = default)
@@ -31,6 +33,13 @@ internal sealed class ClientsNotifier : IClientsNotifier
     public async Task NotifyRaceFinishedAsync(RaceFinishedMessage message, CancellationToken cancellationToken = default)
     {
         await _hubContext.Clients.Group("RacesGroup").SendAsync("RaceFinished", message, cancellationToken);
-        
     }
+
+    public async Task NotifyBalanceChangedAsync(CancellationToken cancellationToken = default)
+    {
+        decimal newBalance = await _walletService.GetBalanceAsync(Guid.NewGuid(), cancellationToken);
+        await _hubContext.Clients.Group("RacesGroup").SendAsync("BalanceChange", newBalance, cancellationToken);
+    }
+
+
 }
