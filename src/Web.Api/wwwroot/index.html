@@ -132,6 +132,7 @@
             text-align: center;
             background: #fafafa;
         }
+        .bet-square.disabled { opacity: 0.6; pointer-events: none; }
         .bet-square.selected { background: #e8f5e9; border-color: #2e7d32; }
         .bet-square-winning { border-color: #2e7d32; }
         .bet-square-losing { border-color: #c62828; }
@@ -234,13 +235,11 @@
         <div class="content-grid">
             <div class="left-column">
                 <div class="races-container">
-                    <h2>Upcoming Races</h2>
+                    <h2>Races</h2>
                     <div id="racesContainer" class="loading">
                         <div class="spinner"></div>
                         <p>Connecting to server...</p>
                     </div>
-                    <h2 style="margin-top: 28px;">Completed Races</h2>
-                    <div id="completedContainer" class="no-races">No completed races yet</div>
                 </div>
             </div>
             <div class="ticket-sidebar" id="ticketSidebar">
@@ -269,8 +268,7 @@
 
     <script>
         let connection;
-        let races = []; // upcoming / in-progress tracked from server feed
-        let completedRaces = []; // locally accumulated finished races
+        let races = []; // all known races (scheduled, in-progress, completed)
         let balance = null; // current wallet balance
 
         async function startConnection() {
@@ -281,8 +279,21 @@
                     .build();
 
                 connection.on("UpcomingRaces", function (upcomingRaces) {
-                    races = Array.isArray(upcomingRaces) ? upcomingRaces : [];
-                    displayRaces(); // re-render upcoming while keeping completed
+                    const incoming = Array.isArray(upcomingRaces) ? upcomingRaces : [];
+                    const byId = new Map(races.map(r => [r.id, r]));
+                    for (const r of incoming) {
+                        const existing = byId.get(r.id);
+                        if (existing && (existing.status === 2 || existing.isCompleted)) {
+                            // Keep completed race details; merge non-conflicting fields
+                            byId.set(r.id, { ...r, ...existing, status: 2, isCompleted: true });
+                        } else if (existing) {
+                            byId.set(r.id, { ...existing, ...r });
+                        } else {
+                            byId.set(r.id, r);
+                        }
+                    }
+                    races = Array.from(byId.values());
+                    displayRaces();
                 });
 
                 connection.onreconnecting(() => {
@@ -323,15 +334,17 @@
 
         function displayRaces() {
             const container = document.getElementById("racesContainer");
-            const completedContainer = document.getElementById("completedContainer");
 
             if (races.length === 0) {
-                container.innerHTML = '<div class="no-races">No upcoming races at the moment</div>';
+                container.innerHTML = '<div class="no-races">No races at the moment</div>';
             } else {
                 const racesHtml = races.map(race => {
                     const startTime = new Date(race.startTime).toLocaleString();
                     const statusClass = getStatusClass(race.status);
                     const statusText = getStatusText(race.status);
+                    const countdownHtml = (race.status === 0 || race.status === 1)
+                        ? `<div class="race-time">Starts in: <span id="cd-${race.id}">${race.status === 1 ? 'Started' : ''}</span></div>`
+                        : '';
                     const betsHtml = (race.bets && race.bets.length > 0)
                         ? (() => {
                             const byWinner = race.bets.filter(b => b.type === 0);
@@ -346,7 +359,7 @@
                                     const runner = (bet.runners && bet.runners.length) ? bet.runners[0] : '';
                                     const isSelected = selectedBetsByRace.get(race.id)?.id === bet.id;
                                     return `
-                                      <div class="bet-square ${squareClass} ${isSelected ? 'selected' : ''}" data-bet-id="${bet.id}" data-race-id="${race.id}" data-type="${bet.type}" data-runner="${runner}" data-odds="${bet.odds}">
+                                      <div class="bet-square ${squareClass} ${isSelected ? 'selected' : ''} ${race.status === 2 ? 'disabled' : ''}" data-bet-id="${bet.id}" data-race-id="${race.id}" data-type="${bet.type}" data-runner="${runner}" data-odds="${bet.odds}">
                                         <div class="runner-number">${runner}</div>
                                         <div class="bet-odds ${oddsClass}">${bet.odds}</div>
                                       </div>`;
@@ -363,6 +376,7 @@
                         <div class="race-card">
                             <div class="race-id">Race ID: ${race.id}</div>
                             <div class="race-time">Start Time: ${startTime}</div>
+                            ${countdownHtml}
                             <div class="race-status ${statusClass}">${statusText}</div>
                             ${betsHtml}
                             ${resultHtml}
@@ -370,51 +384,7 @@
                     `;
                 }).join('');
                 container.innerHTML = `<div class="races-grid">${racesHtml}</div>`;
-            }
-
-            // Render completed races
-            if (!completedRaces || completedRaces.length === 0) {
-                completedContainer.innerHTML = '<div class="no-races">No completed races yet</div>';
-            } else {
-                const completedHtml = completedRaces.map(race => {
-                    const startTime = race.startTime ? new Date(race.startTime).toLocaleString() : '';
-                    const betsHtml = (race.bets && race.bets.length > 0)
-                        ? (() => {
-                            const byWinner = race.bets.filter(b => b.type === 0);
-                            const byFirstThree = race.bets.filter(b => b.type === 1);
-                            const renderGroup = (title, arr) => arr.length ? `
-                              <div class="bets-group">
-                                <div class="bets-group-title">${title}</div>
-                                <div class="bets-grid">
-                                  ${arr.map(bet => {
-                                    const squareClass = getBetSquareClass(bet.status);
-                                    const oddsClass = getBetStatusClass(bet.status);
-                                    const runner = (bet.runners && bet.runners.length) ? bet.runners[0] : '';
-                                    return `
-                                      <div class="bet-square ${squareClass}">
-                                        <div class="runner-number">${runner}</div>
-                                        <div class="bet-odds ${oddsClass}">${bet.odds}</div>
-                                      </div>`;
-                                  }).join('')}
-                                </div>
-                              </div>` : '';
-                            return renderGroup('Winner', byWinner) + renderGroup('Within First Three', byFirstThree);
-                          })()
-                        : '';
-                    const resultHtml = (race.result && race.result.length > 0)
-                        ? `<div class="race-result"><strong>Result:</strong> ${race.result}</div>`
-                        : '';
-                    return `
-                        <div class="race-card">
-                            <div class="race-id">Race ID: ${race.id}</div>
-                            ${startTime ? `<div class="race-time">Start Time: ${startTime}</div>` : ''}
-                            <div class="race-status status-completed">Completed</div>
-                            ${betsHtml}
-                            ${resultHtml}
-                        </div>
-                    `;
-                }).join('');
-                completedContainer.innerHTML = `<div class="races-grid">${completedHtml}</div>`;
+                updateCountdowns();
             }
         }
 
@@ -431,7 +401,7 @@
             switch (status) {
                 case 0: return 'Scheduled';
                 case 1: return 'In Progress';
-                case 2: return 'Completed';
+                case 2: return 'Finished';
                 default: return 'Scheduled';
             }
         }
@@ -440,15 +410,18 @@
             if (!message || !message.raceId || !message.result) return;
             const idx = races.findIndex(r => r.id === message.raceId);
             if (idx !== -1) {
-                const race = races.splice(idx, 1)[0];
+                const race = races[idx];
                 race.result = Array.isArray(message.result) ? message.result.join(', ') : String(message.result);
                 race.isCompleted = true;
+                race.status = 2;
                 updateBetStatusesForRace(race, Array.isArray(message.result) ? message.result : []);
-                completedRaces.unshift(race);
             } else {
-                // Fallback: if race not in upcoming list, add minimal completed entry
-                completedRaces.unshift({ id: message.raceId, result: Array.isArray(message.result) ? message.result.join(', ') : String(message.result), isCompleted: true, bets: [] });
+                // If race not found, add a minimal completed entry so it shows up
+                races.unshift({ id: message.raceId, result: Array.isArray(message.result) ? message.result.join(', ') : String(message.result), isCompleted: true, status: 2, bets: [] });
             }
+            // Clear any selected bets for this race since it's finished
+            selectedBetsByRace.delete(message.raceId);
+            renderTicket();
             displayRaces();
         }
 
@@ -465,9 +438,9 @@
                 el.textContent = '—';
             } else {
                 try {
-                    el.textContent = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(balance));
+                    el.textContent = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(balance));
                 } catch {
-                    el.textContent = `$${Number(balance).toFixed(2)}`;
+                    el.textContent = `€${Number(balance).toFixed(2)}`;
                 }
             }
         }
@@ -568,6 +541,9 @@
             const square = e.target.closest('.bet-square');
             if (!square) return;
             if (!square.closest('#racesContainer')) return;
+            if (square.classList.contains('disabled')) return;
+            const race = races.find(r => String(r.id) === String(square.dataset.raceId));
+            if (!race || race.status === 2) return;
             const bet = {
                 id: square.dataset.betId,
                 raceId: square.dataset.raceId,
@@ -670,9 +646,9 @@
 
         function formatCurrency(amount) {
             try {
-                return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount));
+                return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount));
             } catch {
-                return `$${Number(amount).toFixed(2)}`;
+                return `€${Number(amount).toFixed(2)}`;
             }
         }
 
@@ -733,9 +709,38 @@
             }
         });
 
+        // Countdown helpers
+        function pad2(value) { return String(value).padStart(2, '0'); }
+        function formatDuration(ms) {
+            const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return hours > 0
+                ? `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`
+                : `${pad2(minutes)}:${pad2(seconds)}`;
+        }
+        function updateCountdowns() {
+            const now = Date.now();
+            for (const race of races) {
+                const el = document.getElementById(`cd-${race.id}`);
+                if (!el) continue;
+                if (race.status === 0) {
+                    const diff = new Date(race.startTime).getTime() - now;
+                    el.textContent = diff <= 0 ? 'Starting...' : formatDuration(diff);
+                } else if (race.status === 1) {
+                    el.textContent = 'Started';
+                } else {
+                    el.textContent = '';
+                }
+            }
+        }
+
         // Start the connection when the page loads
         startConnection();
         renderTicket();
+        updateCountdowns();
+        setInterval(updateCountdowns, 1000);
     </script>
 </body>
 </html>
