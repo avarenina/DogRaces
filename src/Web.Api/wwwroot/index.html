@@ -173,6 +173,23 @@
         .ticket-msg { margin-top: 10px; font-size: 13px; }
         .ticket-msg.error { color: #c62828; }
         .ticket-msg.success { color: #2e7d32; }
+
+        /* Recent tickets section */
+        .ticket-history { margin-top: 16px; }
+        .tickets-list { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .ticket-card { border: 1px solid #eee; border-radius: 8px; padding: 10px; background: #fafafa; }
+        .ticket-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .ticket-id { color: #666; font-size: 12px; }
+        .ticket-amounts { font-size: 12px; color: #444; }
+        .ticket-status-pill { display: inline-block; padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 700; }
+        .ticket-status-pending { background: #e3f2fd; color: #1976d2; }
+        .ticket-status-rejected { background: #ffebee; color: #c62828; }
+        .ticket-status-success { background: #e8f5e9; color: #2e7d32; }
+        .ticket-status-won { background: #c8e6c9; color: #2e7d32; }
+        .ticket-status-lost { background: #ffebee; color: #c62828; }
+        .ticket-bets { margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+        .ticket-bet { border: 1px solid #e0e0e0; border-radius: 6px; padding: 6px 8px; background: #fff; font-size: 12px; }
+        .ticket-bet .label { color: #666; }
         
         .no-races {
             text-align: center;
@@ -240,6 +257,12 @@
                     <button id="purchaseBtn" class="purchase-btn" disabled>Purchase</button>
                 </div>
                 <div id="ticketMessage" class="ticket-msg" style="display:none;"></div>
+
+                <div class="ticket-history">
+                    <h3 style="margin: 16px 0 8px 0;">Recent Tickets</h3>
+                    <button id="loadTicketsBtn" class="purchase-btn" type="button">Load last 10 tickets</button>
+                    <div id="ticketsContainer" class="tickets-list"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -619,6 +642,94 @@
                 messageEl.textContent = 'Network error while purchasing ticket';
                 messageEl.className = 'ticket-msg error';
                 messageEl.style.display = 'block';
+            }
+        });
+
+        // Tickets section
+        function getTicketStatusText(status) {
+            switch (status) {
+                case 0: return 'Pending';
+                case 1: return 'Rejected';
+                case 2: return 'Success';
+                case 3: return 'Won';
+                case 4: return 'Lost';
+                default: return 'Unknown';
+            }
+        }
+
+        function getTicketStatusClass(status) {
+            switch (status) {
+                case 0: return 'ticket-status-pending';
+                case 1: return 'ticket-status-rejected';
+                case 2: return 'ticket-status-success';
+                case 3: return 'ticket-status-won';
+                case 4: return 'ticket-status-lost';
+                default: return 'ticket-status-pending';
+            }
+        }
+
+        function formatCurrency(amount) {
+            try {
+                return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(amount));
+            } catch {
+                return `$${Number(amount).toFixed(2)}`;
+            }
+        }
+
+        function renderTickets(items) {
+            const container = document.getElementById('ticketsContainer');
+            if (!items || !items.length) {
+                container.innerHTML = '<div class="ticket-card"><em>No tickets found</em></div>';
+                return;
+            }
+            const html = items.map(t => {
+                const idShort = String(t.id).slice(0, 8);
+                const statusText = getTicketStatusText(t.status);
+                const statusClass = getTicketStatusClass(t.status);
+                const payin = formatCurrency(t.payin);
+                const winAmount = formatCurrency(t.winAmount);
+                const createdAt = t.createdAt ? new Date(t.createdAt).toLocaleString() : '';
+                const completedAt = t.completedAt ? new Date(t.completedAt).toLocaleString() : '';
+                const betsHtml = (t.bets && t.bets.length) ? t.bets.map(b => {
+                    const betIdShort = String(b.betId).slice(0, 8);
+                    const betStatus = getBetStatusText(b.status);
+                    const betClass = getBetStatusClass(b.status);
+                    return `<div class="ticket-bet ${betClass}"><span class="label">Bet:</span> ${betIdShort} • <span class="label">Odds:</span> ${b.odds} • <span class="label">Status:</span> ${betStatus}</div>`;
+                }).join('') : '<div class="ticket-bet"><em>No bets</em></div>';
+                return `
+                    <div class="ticket-card">
+                        <div class="ticket-row">
+                            <div>
+                                <div class="ticket-id">Ticket ${idShort}</div>
+                                <div class="ticket-amounts">Pay-in: ${payin} • Win: ${winAmount} • Total Odds: ${t.totalOdds}</div>
+                                <div class="ticket-amounts">Created: ${createdAt}${completedAt ? ` • Completed: ${completedAt}` : ''}</div>
+                            </div>
+                            <div class="ticket-status-pill ${statusClass}">${statusText}</div>
+                        </div>
+                        <div class="ticket-bets">${betsHtml}</div>
+                    </div>`;
+            }).join('');
+            container.innerHTML = html;
+        }
+
+        document.getElementById('loadTicketsBtn').addEventListener('click', async function () {
+            const btn = this;
+            const container = document.getElementById('ticketsContainer');
+            const prevText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            container.innerHTML = '<div class="ticket-card"><div class="spinner"></div> Loading tickets...</div>';
+            try {
+                const resp = await fetch('/tickets?page=1&pageSize=10');
+                if (!resp.ok) throw new Error('Failed to load tickets');
+                const data = await resp.json();
+                const items = Array.isArray(data.items) ? data.items : [];
+                renderTickets(items);
+            } catch (e) {
+                container.innerHTML = '<div class="ticket-card"><span style="color:#c62828;">Failed to load tickets</span></div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = prevText;
             }
         });
 
