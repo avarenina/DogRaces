@@ -30,7 +30,7 @@ public class Ticket : Entity
         if (IsWinning())
         {
             Status = TicketStatus.Won;
-            Raise(new TicketWonDomainEvent(Id, WinAmount));
+            Raise(new TicketWinDomainEvent(Id, WinAmount));
         }
         else
         {

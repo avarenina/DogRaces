@@ -52,8 +52,15 @@ internal sealed class PurchaseTicketCommandHandler(
             if (confirmResult.IsFailure)
             {
                 await walletService.RollbackFundsAsync(command.Id, cancellationToken);
+
+                ticket.Status = TicketStatus.Rejected;
+                await context.SaveChangesAsync(cancellationToken);
+
                 return Result.Failure(Error.Problem("Wallet.ConfirmFailed", "Failed to confirm wallet reservation."));
             }
+
+            // Notify clients for balance change
+            ticket.Raise(new TicketPurchaseDomainEvent(ticket.Id, ticket.Payin));
 
             // Mark ticket as success
             ticket.Status = TicketStatus.Success;

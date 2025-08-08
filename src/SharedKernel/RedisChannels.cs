@@ -8,4 +8,5 @@ namespace SharedKernel;
 public static class RedisChannels
 {
     public const string RaceUpdates = "races";
+    public const string TicketUpdates = "tickets";
 }

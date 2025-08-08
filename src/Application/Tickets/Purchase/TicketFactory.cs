@@ -28,8 +28,6 @@ public sealed class TicketFactory(IDateTimeProvider dateTimeProvider) : ITicketF
             CreatedAt = dateTimeProvider.UtcNow,
         };
 
-        ticket.Raise(new TicketCreatedDomainEvent(ticket.Id));
-
         return ticket;
     }
 }

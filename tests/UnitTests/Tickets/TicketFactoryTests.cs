@@ -43,9 +43,6 @@ public sealed class TicketFactoryTests
 
         Assert.Equal(2, ticket.Bets.Count);
         Assert.All(ticket.Bets, tb => Assert.Equal(BetStatus.InProgress, tb.Status));
-
-        // Domain event raised
-        Assert.Contains(ticket.DomainEvents, e => e is TicketCreatedDomainEvent ev && ev.TicketId == ticketId);
     }
 }
 

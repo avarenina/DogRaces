@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System;
+using Application.Tickets.ProcessTickets;
 
 namespace Infrastructure.Messaging;
 
@@ -58,6 +59,35 @@ internal sealed class RedisSubscriberService : BackgroundService
                             using IServiceScope scope = _serviceProvider.CreateScope();
                             IMessageHandler<RaceFinishedMessage> handler = scope.ServiceProvider.GetRequiredService<IMessageHandler<RaceFinishedMessage>>();
                             await handler.HandleAsync(finished);
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing race update message: {Message}", value);
+            }
+        });
+
+        await subscriber.SubscribeAsync(RedisChannel.Literal(SharedKernel.RedisChannels.TicketUpdates), async (channel, value) =>
+        {
+            try
+            {
+                RedisEnvelope? envelope = JsonSerializer.Deserialize<RedisEnvelope>(value.ToString());
+                if (envelope is null)
+                {
+                    return;
+                }
+
+                switch (envelope.Type)
+                {
+                    case "TicketWinMessage":
+                        TicketWinMessage? win = JsonSerializer.Deserialize<TicketWinMessage>(envelope.Payload);
+                        if (win is not null)
+                        {
+                            using IServiceScope scope = _serviceProvider.CreateScope();
+                            IMessageHandler<TicketWinMessage> handler = scope.ServiceProvider.GetRequiredService<IMessageHandler<TicketWinMessage>>();
+                            await handler.HandleAsync(win);
                         }
                         break;
                 }
