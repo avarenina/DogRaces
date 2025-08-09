@@ -23,5 +23,11 @@ internal sealed class TicketBetConfiguration : IEntityTypeConfiguration<TicketBe
         builder
             .HasIndex(tb => new { tb.TicketId, tb.Status })
             .HasDatabaseName("IX_TicketBets_TicketId_Status");
+
+        // For processor: where tb.Status = InProgress
+        builder
+            .HasIndex(tb => tb.Status)
+            .HasFilter("status = 0")
+            .HasDatabaseName("IX_TicketBets_Status_InProgress");
     }
 }

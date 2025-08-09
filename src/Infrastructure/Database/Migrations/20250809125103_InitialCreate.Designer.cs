@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250807200745_AddTicket")]
-    partial class AddTicket
+    [Migration("20250809125103_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -106,10 +106,14 @@ namespace Infrastructure.Database.Migrations
                     b.HasKey("Id")
                         .HasName("pk_races");
 
+                    b.HasIndex("StartTime")
+                        .HasDatabaseName("IX_Races_Upcoming")
+                        .HasFilter("is_completed = FALSE");
+
                     b.ToTable("races", "public");
                 });
 
-            modelBuilder.Entity("Domain.Ticket.Ticket", b =>
+            modelBuilder.Entity("Domain.Tickets.Ticket", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -143,10 +147,17 @@ namespace Infrastructure.Database.Migrations
                     b.HasKey("Id")
                         .HasName("pk_tickets");
 
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Tickets_ToProcess")
+                        .HasFilter("status = 2 AND completed_at IS NULL");
+
+                    b.HasIndex("Status", "CompletedAt")
+                        .HasDatabaseName("IX_Tickets_Status_CompletedAt");
+
                     b.ToTable("tickets", "public");
                 });
 
-            modelBuilder.Entity("Domain.Ticket.TicketBet", b =>
+            modelBuilder.Entity("Domain.Tickets.TicketBet", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -175,8 +186,12 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("BetId")
                         .HasDatabaseName("ix_ticket_bets_bet_id");
 
-                    b.HasIndex("TicketId")
-                        .HasDatabaseName("ix_ticket_bets_ticket_id");
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_TicketBets_Status_InProgress")
+                        .HasFilter("status = 0");
+
+                    b.HasIndex("TicketId", "Status")
+                        .HasDatabaseName("IX_TicketBets_TicketId_Status");
 
                     b.ToTable("ticket_bets", "public");
                 });
@@ -211,7 +226,7 @@ namespace Infrastructure.Database.Migrations
                     b.Navigation("Race");
                 });
 
-            modelBuilder.Entity("Domain.Ticket.TicketBet", b =>
+            modelBuilder.Entity("Domain.Tickets.TicketBet", b =>
                 {
                     b.HasOne("Domain.Bets.Bet", "Bet")
                         .WithMany("TicketBets")
@@ -220,7 +235,7 @@ namespace Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_ticket_bets_bets_bet_id");
 
-                    b.HasOne("Domain.Ticket.Ticket", "Ticket")
+                    b.HasOne("Domain.Tickets.Ticket", "Ticket")
                         .WithMany("Bets")
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -242,7 +257,7 @@ namespace Infrastructure.Database.Migrations
                     b.Navigation("Bets");
                 });
 
-            modelBuilder.Entity("Domain.Ticket.Ticket", b =>
+            modelBuilder.Entity("Domain.Tickets.Ticket", b =>
                 {
                     b.Navigation("Bets");
                 });

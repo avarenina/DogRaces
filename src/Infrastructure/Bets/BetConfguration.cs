@@ -28,11 +28,9 @@ internal sealed class BetConfiguration : IEntityTypeConfiguration<Bet>
             .HasConversion(converter)
             .IsRequired();
 
-        builder.Ignore(b => b.Type);
-
-        builder.HasDiscriminator<BetType>("Type")
-        .HasValue<WinnerBet>(BetType.Winner)
-        .HasValue<WithinFirstThreeBet>(BetType.WithinFirstThree);
+        builder.HasDiscriminator(b => b.Type)
+            .HasValue<WinnerBet>(BetType.Winner)
+            .HasValue<WithinFirstThreeBet>(BetType.WithinFirstThree);
     }
 
     // TODO: Move to separate helper

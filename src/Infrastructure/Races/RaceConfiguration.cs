@@ -11,6 +11,12 @@ internal sealed class RaceConfiguration : IEntityTypeConfiguration<Race>
     {
         builder.HasKey(t => t.Id);
 
+        builder
+            .HasIndex(r => r.StartTime)
+            .HasFilter("is_completed = FALSE")
+            .HasDatabaseName("IX_Races_Upcoming");
+
+
         builder.Property(r => r.Probabilities)
         .HasConversion(
             // Serialize using invariant culture and period as decimal separator
