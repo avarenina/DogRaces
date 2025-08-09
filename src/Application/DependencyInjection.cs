@@ -45,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<IProbabilityCalculator, ProbabilityCalculator>();
 
         services.AddTransient<IRaceFactory, RaceFactory>();
+        services.AddTransient<IRaceBatchFactory, RaceBatchFactory>();
         services.AddTransient<IBetFactory, BetFactory>();
         services.AddTransient<ITicketFactory, TicketFactory>();
 

@@ -2,6 +2,7 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Abstractions;
+using Domain.Factories;
 using Domain.Races;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
@@ -12,41 +13,32 @@ namespace Application.Races.Create;
 
 internal sealed class CreateRaceCommandHandler(
     IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider,
     IDistributedCache distributedCache,
-    IRaceFactory raceFactory,
+    IRaceBatchFactory raceBatchFactory,
     IMessagePublisher messagePublisher)
     : ICommandHandler<CreateRaceCommand>
 {
     public async Task<Result> Handle(CreateRaceCommand command, CancellationToken cancellationToken)
     {
-        DateTime startTime = command.LastRaceStartTime ?? dateTimeProvider.UtcNow;
+        
+        IReadOnlyList<Race> races = raceBatchFactory.CreateBatch(
+            command.LastRaceStartTime,
+            command.AmountOfRacesToCreate,
+            command.NumberOfRunners,
+            command.BookmakerMargin,
+            command.TimeBetweenRaces);
 
-        var response = new List<Guid> ();
-
-        for (int i = 0; i < command.AmountOfRacesToCreate; i++)
-        {
-            // first we need to update last start time
-            startTime = startTime.AddSeconds(command.TimeBetweenRaces);
-
-            Race race = raceFactory.Create(startTime, command.NumberOfRunners, command.BookmakerMargin);
-
-            context.Races.Add(race);
-            response.Add(race.Id);
-        }
+        context.Races.AddRange(races);
 
         await context.SaveChangesAsync(cancellationToken);
 
-        // invalidate cache
         await distributedCache.RemoveAsync(CacheKeys.UpcomingRaces, cancellationToken);
 
-        // publish event that new races have been added
+        // TODO : Raise batch event
         var message = new RaceCreatedMessage();
         await messagePublisher.PublishAsync(RedisChannels.RaceUpdates, message);
 
         return Result.Success();
     }
-
-    
 }
 public sealed record RaceCreatedMessage();
