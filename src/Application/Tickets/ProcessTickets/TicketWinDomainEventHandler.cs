@@ -1,6 +1,6 @@
 ﻿using Application.Abstractions.Messaging;
 using Domain.Races;
-using Domain.Ticket;
+using Domain.Tickets;
 using Microsoft.Extensions.Logging;
 using SharedKernel;
 

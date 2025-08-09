@@ -1,5 +1,6 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -13,7 +14,7 @@ internal sealed class GetTicketsQueryHandler(IApplicationDbContext context)
         int page = query.Page < 1 ? 1 : query.Page;
         int pageSize = query.PageSize is < 1 or > 200 ? 20 : query.PageSize;
 
-        IQueryable<Domain.Ticket.Ticket> baseQuery = context.Tickets
+        IQueryable<Ticket> baseQuery = context.Tickets
             .AsNoTracking()
             .OrderByDescending(t => t.CreatedAt)
             .Include(t => t.Bets)

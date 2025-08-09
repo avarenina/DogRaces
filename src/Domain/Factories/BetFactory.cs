@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Application.Abstractions;
+using Domain.Abstractions;
 using Domain.Bets;
 using Domain.Races;
 
-namespace Application.Races.Create;
-internal sealed class BetFactory : IBetFactory
+namespace Domain.Factories;
+public sealed class BetFactory : IBetFactory
 {
 
     public List<Bet> Create(Race race)

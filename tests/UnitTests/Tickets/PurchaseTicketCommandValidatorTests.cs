@@ -1,4 +1,5 @@
 using Application.Tickets.Purchase;
+using Domain.Tickets;
 
 namespace UnitTests.Tickets;
 

@@ -1,4 +1,4 @@
-﻿using Domain.Ticket;
+﻿using Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

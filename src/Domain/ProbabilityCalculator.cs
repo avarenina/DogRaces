@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using Application.Abstractions;
-using Domain.Abstractions;
+﻿using Domain.Abstractions;
 
-namespace Application;
+namespace Domain;
 public sealed class ProbabilityCalculator : IProbabilityCalculator
 {
     private readonly IRandomDoubleProvider _randomProvider;

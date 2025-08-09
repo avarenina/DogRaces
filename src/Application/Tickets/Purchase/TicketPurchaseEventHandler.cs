@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Application.Abstractions;
-using Application.Abstractions.Messaging;
-using Domain.Ticket;
+﻿using Application.Abstractions;
+using Domain.Tickets;
 using Microsoft.Extensions.Logging;
 using SharedKernel;
 

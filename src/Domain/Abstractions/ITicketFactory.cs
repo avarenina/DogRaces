@@ -1,7 +1,7 @@
 using Domain.Bets;
-using Domain.Ticket;
+using Domain.Tickets;
 
-namespace Application.Abstractions;
+namespace Domain.Abstractions;
 
 public interface ITicketFactory
 {

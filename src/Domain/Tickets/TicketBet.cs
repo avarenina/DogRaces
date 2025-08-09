@@ -1,7 +1,7 @@
 ﻿using Domain.Bets;
 using SharedKernel;
 
-namespace Domain.Ticket;
+namespace Domain.Tickets;
 public class TicketBet : Entity
 {
     public Guid Id { get; set; }

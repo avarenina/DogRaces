@@ -1,9 +1,11 @@
-﻿using Application.Abstractions.Data;
+﻿using System.Threading;
+using Application.Abstractions.Data;
 using Domain.Bets;
 using Domain.Races;
-using Domain.Ticket;
+using Domain.Tickets;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using SharedKernel;
 
 namespace Infrastructure.Database;
@@ -42,6 +44,25 @@ public sealed class ApplicationDbContext(
         await PublishDomainEventsAsync();
 
         return result;
+    }
+
+    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken)
+        => Database.BeginTransactionAsync(cancellationToken);
+
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken)
+    {
+        if (Database.CurrentTransaction != null)
+        {
+            await Database.CurrentTransaction.CommitAsync(cancellationToken);
+        }
+    }
+
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken)
+    {
+        if (Database.CurrentTransaction != null)
+        {
+            await Database.CurrentTransaction.RollbackAsync(cancellationToken);
+        }
     }
 
     private async Task PublishDomainEventsAsync()

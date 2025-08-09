@@ -1,6 +1,6 @@
 ﻿using SharedKernel;
 
-namespace Domain.Ticket;
+namespace Domain.Tickets;
 public static class TicketErrors
 {
     public static Error NotFound() => Error.NotFound(

@@ -2,7 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Tickets.Process;
 using Domain.Bets;
-using Domain.Ticket;
+using Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -19,6 +19,7 @@ internal sealed class ProcessTicketsCommandHandler(IApplicationDbContext context
                 .Where(t => t.Status == TicketStatus.Success && t.CompletedAt == null)
                 .Where(t => !t.Bets.Any(b => b.Status == BetStatus.InProgress))
                 .Include(t => t.Bets)
+                .OrderBy(t => t.CreatedAt)
                 .Take(command.BatchSize)
                 .ToListAsync(cancellationToken);
 

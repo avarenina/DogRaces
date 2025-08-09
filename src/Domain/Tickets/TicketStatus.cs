@@ -1,4 +1,4 @@
-﻿namespace Domain.Ticket;
+﻿namespace Domain.Tickets;
 public enum TicketStatus
 {
     Pending,

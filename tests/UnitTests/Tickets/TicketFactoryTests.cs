@@ -1,7 +1,7 @@
 using Application.Abstractions;
-using Application.Tickets.Purchase;
 using Domain.Bets;
-using Domain.Ticket;
+using Domain.Factories;
+using Domain.Tickets;
 using Moq;
 using SharedKernel;
 

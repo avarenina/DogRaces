@@ -2,15 +2,16 @@
 using Application.Abstractions.Messaging;
 using Application.Abstractions;
 using Domain.Bets;
-using Domain.Ticket;
+using Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
+using Domain.Abstractions;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Application.Tickets.Purchase;
 internal sealed class PurchaseTicketCommandHandler(
     IApplicationDbContext context,
     ITicketFactory ticketFactory,
-    ITicketPurchaseValidator ticketPurchaseValidator,
     TicketValidationOptions ticketValidationOptions,
     IWalletService walletService)
     : ICommandHandler<PurchaseTicketCommand>
@@ -28,11 +29,6 @@ internal sealed class PurchaseTicketCommandHandler(
             return Result.Failure(TicketErrors.NotFound());
         }
 
-        if (!ticketPurchaseValidator.Validate(command, bets, ticketValidationOptions, out Error? validationError))
-        {
-            return Result.Failure(validationError ?? Error.Problem("Tickets.ValidationFailed", "Ticket validation failed."));
-        }
-
         // Reserve funds from wallet
         Result reservationResult = await walletService.ReserveFundsAsync(Guid.NewGuid(), command.Payin, command.Id, cancellationToken);
         if (reservationResult.IsFailure)
@@ -40,10 +36,19 @@ internal sealed class PurchaseTicketCommandHandler(
             return reservationResult;
         }
 
+        // Begin transaction
+        await using IDbContextTransaction transaction = await context.BeginTransactionAsync(cancellationToken);
+
         try
         {
             // Create ticket as Pending
             Ticket ticket = ticketFactory.Create(command.Id, bets, command.Payin);
+
+            if (!ticket.Validate(ticketValidationOptions, out Error? validationError))
+            {
+                return Result.Failure(validationError ?? Error.Problem("Tickets.ValidationFailed", "Ticket validation failed."));
+            }
+
             context.Tickets.Add(ticket);
             await context.SaveChangesAsync(cancellationToken);
 
@@ -66,12 +71,16 @@ internal sealed class PurchaseTicketCommandHandler(
             ticket.Status = TicketStatus.Success;
             await context.SaveChangesAsync(cancellationToken);
 
+            await context.CommitTransactionAsync(cancellationToken);
+
             return Result.Success();
         }
         catch (Exception ex)
         {
             // Roll back wallet reservation if any error occurs
             await walletService.RollbackFundsAsync(command.Id, cancellationToken);
+
+            await context.RollbackTransactionAsync(cancellationToken);
 
             // Optionally log the exception here
             return Result.Failure(Error.Problem("Ticket.CreationFailed", $"Ticket creation failed: {ex.Message}"));

@@ -1,4 +1,7 @@
-﻿namespace UnitTests.Races;
+﻿using Domain.Abstractions;
+using Domain.Factories;
+
+namespace UnitTests.Races;
 public class RaceFactoryTests
 {
     [Fact]
@@ -6,8 +9,8 @@ public class RaceFactoryTests
     {
         // Arrange
         var mockDateTimeProvider = new Mock<SharedKernel.IDateTimeProvider>();
-        var mockProbabilityCalculator = new Mock<Application.Abstractions.IProbabilityCalculator>();
-        var mockBetFactory = new Mock<Application.Abstractions.IBetFactory>();
+        var mockProbabilityCalculator = new Mock<IProbabilityCalculator>();
+        var mockBetFactory = new Mock<IBetFactory>();
 
         var now = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         mockDateTimeProvider.Setup(x => x.UtcNow).Returns(now);
@@ -40,7 +43,7 @@ public class RaceFactoryTests
         var combinedBets = new List<Domain.Bets.Bet> { winnerBet, withinFirstThreeBet };
         mockBetFactory.Setup(x => x.Create(It.IsAny<Domain.Races.Race>())).Returns(combinedBets);
 
-        var factory = new Application.Races.Create.RaceFactory(
+        var factory = new RaceFactory(
             mockDateTimeProvider.Object,
             mockProbabilityCalculator.Object,
             mockBetFactory.Object

@@ -1,7 +1,7 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Bets;
-using Domain.Ticket;
+using Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 using Scrutor;
 using SharedKernel;

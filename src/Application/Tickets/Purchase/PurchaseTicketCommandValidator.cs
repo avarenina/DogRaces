@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Domain.Tickets;
+using FluentValidation;
 
 namespace Application.Tickets.Purchase;
 

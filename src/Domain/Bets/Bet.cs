@@ -1,5 +1,5 @@
 ﻿using Domain.Races;
-using Domain.Ticket;
+using Domain.Tickets;
 using SharedKernel;
 
 namespace Domain.Bets;

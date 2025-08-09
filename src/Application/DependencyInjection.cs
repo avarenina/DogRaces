@@ -1,8 +1,9 @@
-﻿using Application.Abstractions;
-using Application.Abstractions.Behaviors;
+﻿using Application.Abstractions.Behaviors;
 using Application.Abstractions.Messaging;
-using Application.Races.Create;
-using Application.Tickets.Purchase;
+using Domain;
+using Domain.Abstractions;
+using Domain.Factories;
+using Domain.Tickets;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using SharedKernel;
@@ -39,9 +40,8 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
 
         // Strongly-typed validation options for ticket purchase
-        services.AddSingleton(new Application.Tickets.Purchase.TicketValidationOptions());
-        services.AddTransient<Application.Tickets.Purchase.ITicketPurchaseValidator, Application.Tickets.Purchase.TicketPurchaseValidator>();
-
+        services.AddSingleton(new TicketValidationOptions());
+        
         services.AddScoped<IProbabilityCalculator, ProbabilityCalculator>();
 
         services.AddTransient<IRaceFactory, RaceFactory>();

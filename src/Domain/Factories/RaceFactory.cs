@@ -1,8 +1,8 @@
-﻿using Application.Abstractions;
+﻿using Domain.Abstractions;
 using Domain.Races;
 using SharedKernel;
 
-namespace Application.Races.Create;
+namespace Domain.Factories;
 
 public class RaceFactory(
     IDateTimeProvider dateTimeProvider,

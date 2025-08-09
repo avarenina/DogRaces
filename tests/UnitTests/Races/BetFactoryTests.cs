@@ -1,5 +1,6 @@
 using Application.Races.Create;
 using Domain.Bets;
+using Domain.Factories;
 using Domain.Races;
 
 namespace UnitTests.Races;

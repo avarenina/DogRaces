@@ -1,6 +1,6 @@
 using SharedKernel;
 
-namespace Domain.Ticket;
+namespace Domain.Tickets;
 
 public sealed record TicketPurchaseDomainEvent(Guid TicketId, decimal Amount) : IDomainEvent;
 

@@ -1,9 +1,11 @@
 ﻿using Domain.Bets;
 using SharedKernel;
 
-namespace Domain.Ticket;
+namespace Domain.Tickets;
 public class Ticket : Entity
 {
+
+
     public Guid Id { get; set; }
     public TicketStatus Status { get; set; }
     public virtual ICollection<TicketBet> Bets { get; set; } = [];
@@ -39,5 +41,38 @@ public class Ticket : Entity
 
         CompletedAt = completedAt;
     }
+
+    public bool Validate(
+        TicketValidationOptions options,
+        out Error? error)
+    {
+        error = null;
+        var bets = Bets.Select(tb => tb.Bet).ToList();
+
+        // one bet per race
+        var distinctRaceIds = bets.Select(b => b.Race.Id).Distinct().ToList();
+        if (bets.Count != distinctRaceIds.Count)
+        {
+            error = TicketErrors.OneBetPerRaceAllowed();
+            return false;
+        }
+
+        decimal totalOdds = bets.Aggregate(1m, (acc, b) => acc * b.Odds);
+        if (totalOdds < options.MinTotalOdds || totalOdds > options.MaxTotalOdds)
+        {
+            error = TicketErrors.TotalOddsOutOfRange(options.MinTotalOdds, options.MaxTotalOdds);
+            return false;
+        }
+
+        decimal winAmount = Math.Round(Payin * totalOdds, 2, MidpointRounding.AwayFromZero);
+        if (winAmount > options.MaxWin)
+        {
+            error = TicketErrors.MaxWinExceeded(options.MaxWin);
+            return false;
+        }
+
+        return true;
+    }
 }
+
 

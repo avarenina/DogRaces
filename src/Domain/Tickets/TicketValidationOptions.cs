@@ -1,4 +1,4 @@
-namespace Application.Tickets.Purchase;
+namespace Domain.Tickets;
 
 public sealed class TicketValidationOptions
 {

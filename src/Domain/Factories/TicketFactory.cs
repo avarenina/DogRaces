@@ -1,9 +1,9 @@
-using Application.Abstractions;
+using Domain.Abstractions;
 using Domain.Bets;
-using Domain.Ticket;
+using Domain.Tickets;
 using SharedKernel;
 
-namespace Application.Tickets.Purchase;
+namespace Domain.Factories;
 
 public sealed class TicketFactory(IDateTimeProvider dateTimeProvider) : ITicketFactory
 {

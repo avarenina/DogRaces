@@ -1,5 +1,5 @@
 using Domain.Bets;
-using Domain.Ticket;
+using Domain.Tickets;
 
 namespace Application.Tickets.Get;
 
