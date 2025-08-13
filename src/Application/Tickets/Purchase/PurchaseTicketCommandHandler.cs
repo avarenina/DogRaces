@@ -36,9 +36,6 @@ internal sealed class PurchaseTicketCommandHandler(
             return reservationResult;
         }
 
-        // Begin transaction
-        await using IDbContextTransaction transaction = await context.BeginTransactionAsync(cancellationToken);
-
         try
         {
             // Create ticket as Pending
@@ -60,18 +57,13 @@ internal sealed class PurchaseTicketCommandHandler(
 
                 ticket.Status = TicketStatus.Rejected;
                 await context.SaveChangesAsync(cancellationToken);
-
                 return Result.Failure(Error.Problem("Wallet.ConfirmFailed", "Failed to confirm wallet reservation."));
             }
-
-            // Notify clients for balance change
+            
             ticket.Raise(new TicketPurchaseDomainEvent(ticket.Id, ticket.Payin));
 
-            // Mark ticket as success
             ticket.Status = TicketStatus.Success;
             await context.SaveChangesAsync(cancellationToken);
-
-            await context.CommitTransactionAsync(cancellationToken);
 
             return Result.Success();
         }
@@ -80,9 +72,6 @@ internal sealed class PurchaseTicketCommandHandler(
             // Roll back wallet reservation if any error occurs
             await walletService.RollbackFundsAsync(command.Id, cancellationToken);
 
-            await context.RollbackTransactionAsync(cancellationToken);
-
-            // Optionally log the exception here
             return Result.Failure(Error.Problem("Ticket.CreationFailed", $"Ticket creation failed: {ex.Message}"));
         }
     }
